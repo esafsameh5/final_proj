@@ -708,7 +708,7 @@ tr:hover {
   display: none;
   position: fixed;
   top: 15px;
-  right: 15px;
+  left: 15px;
   z-index: 1100;
   background: var(--primary);
   color: white;
@@ -805,6 +805,60 @@ tr:hover {
 @keyframes slideUp {
   from { transform: translateY(30px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Layout Classes */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1040;
+}
+
+.topbar-search-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 15px;
+}
+
+@media (max-width: 600px) {
+  .topbar-search-group {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+  .topbar-search-group input {
+    width: 100% !important;
+  }
+  .topbar-search-group button {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .box-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .box-header h3 {
+    text-align: center !important;
+  }
+  .box-header button {
+    width: 100% !important;
+  }
 }
 
 @media (max-width: 900px) {

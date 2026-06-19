@@ -126,7 +126,7 @@ function DoctorPatientProfile({
       {activeSubTab === "visits-tab" && (
         <div id="visits-tab" className="tab-content active">
           <div className="box" style={{ boxShadow: "none", border: "none", padding: "10px 0 0", background: "transparent" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+            <div className="box-header">
               <h3 style={{ color: "var(--primary)", margin: "0", fontWeight: "700", fontSize: "16px" }}>سجل الزيارات والتشخيصات السريرية</h3>
               <button className="btn" onClick={() => setVisitModalOpen(true)}>➕ إضافة كشف جديد</button>
             </div>
@@ -165,7 +165,7 @@ function DoctorPatientProfile({
       {activeSubTab === "prescriptions-tab" && (
         <div id="prescriptions-tab" className="tab-content active">
           <div className="box" style={{ boxShadow: "none", border: "none", padding: "10px 0 0", background: "transparent" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+            <div className="box-header">
               <h3 style={{ color: "var(--primary)", margin: "0", fontWeight: "700", fontSize: "16px" }}>الوصفات الطبية الصادرة للمواطن</h3>
               <button className="btn" onClick={() => setPrescriptionModalOpen(true)}>➕ إضافة وصفة علاجية</button>
             </div>
@@ -236,7 +236,7 @@ function DoctorPatientProfile({
       {activeSubTab === "referrals-tab" && (
         <div id="referrals-tab" className="tab-content active">
           <div className="box" style={{ boxShadow: "none", border: "none", padding: "10px 0 0", background: "transparent" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+            <div className="box-header">
               <h3 style={{ color: "var(--primary)", margin: "0", fontWeight: "700", fontSize: "16px" }}>سجل التحويلات الطبية الصادرة</h3>
               <button className="btn" onClick={() => setReferralModalOpen(true)}>➕ إنشاء تحويل جديد</button>
             </div>

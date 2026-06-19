@@ -67,7 +67,7 @@ function DoctorTestsLabs({
       {activeTestsSubTab === "labs-tab" && (
         <div id="labs-tab" className="tab-content active">
           <div className="box" style={{ boxShadow: "none", border: "none", padding: "10px 0 0", background: "transparent" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+            <div className="box-header">
               <h3 style={{ color: "var(--primary)", margin: "0", fontWeight: "700", fontSize: "16px" }}>طلبات ونتائج التحاليل المخبرية للمريض: {activePatient.name}</h3>
               <button className="btn" onClick={() => { 
                 setNewUpload(prev => ({ ...prev, type: "lab" }));
@@ -117,7 +117,7 @@ function DoctorTestsLabs({
       {activeTestsSubTab === "radiology-tab" && (
         <div id="radiology-tab" className="tab-content active">
           <div className="box" style={{ boxShadow: "none", border: "none", padding: "10px 0 0", background: "transparent" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+            <div className="box-header">
               <h3 style={{ color: "var(--primary)", margin: "0", fontWeight: "700", fontSize: "16px" }}>فحوصات وتقارير الأشعة الطبية للمريض: {activePatient.name}</h3>
               <button className="btn" onClick={() => { 
                 setNewUpload(prev => ({ ...prev, type: "radiology" }));

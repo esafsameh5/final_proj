@@ -25,7 +25,7 @@ function DoctorHome({
           <p>لوحة متابعة المرضى والسجلات الطبية للعيادة</p>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div className="topbar-search-group">
           <input 
             type="text" 
             placeholder="ابحث عن مريض بالاسم..." 
