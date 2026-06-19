@@ -154,14 +154,14 @@ function MainApp() {
   const navigate = useNavigate();
   const location = useLocation();
   const [patients, setPatients] = useState(initialPatientsData);
-  const [currentPatientId, setCurrentPatientId] = useState(null);
-  const [quickActivePatientId, setQuickActivePatientId] = useState(null);
-  const [activePage, setActivePage] = useState("homePage");
+  const [currentPatientId, setCurrentPatientId] = useState(() => localStorage.getItem("currentPatientId") || null);
+  const [quickActivePatientId, setQuickActivePatientId] = useState(() => localStorage.getItem("quickActivePatientId") || null);
+  const [activePage, setActivePage] = useState(() => localStorage.getItem("activePage") || "homePage");
   const [activeSubTab, setActiveSubTab] = useState("visits-tab");
   const [activeTestsSubTab, setActiveTestsSubTab] = useState("labs-tab");
   const [activeDashboard, setActiveDashboard] = useState("login"); // "login", "forgot-password", "doctor", "patient", "portal"
   const [activeHeaderTab, setActiveHeaderTab] = useState("login"); // "login", "forgot-password", "doctor", "patient", "home"
-  const [patientActivePage, setPatientActivePage] = useState("homePage");
+  const [patientActivePage, setPatientActivePage] = useState(() => localStorage.getItem("patientActivePage") || "homePage");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
 
@@ -231,17 +231,23 @@ function MainApp() {
       setActiveHeaderTab("login");
       setSidebarOpen(false);
       setCurrentPatientId(null);
+      setQuickActivePatientId(null);
+      setActivePage("homePage");
+      setPatientActivePage("homePage");
     } else if (path === "/forgot-password") {
       setActiveDashboard("forgot-password");
       setActiveHeaderTab("forgot-password");
       setSidebarOpen(false);
       setCurrentPatientId(null);
+      setQuickActivePatientId(null);
+      setActivePage("homePage");
+      setPatientActivePage("homePage");
     } else if (path === "/register") {
       navigate("/login", { replace: true });
     } else if (path === "/doctor") {
       setActiveDashboard("doctor");
       setActiveHeaderTab("doctor");
-      setCurrentPatientId(null);
+      // Keep existing currentPatientId from localStorage
       const user = sessionStorage.getItem("activeUser");
       if (user) {
         let formattedName = user;
@@ -253,7 +259,7 @@ function MainApp() {
     } else if (path === "/patient") {
       setActiveDashboard("patient");
       setActiveHeaderTab("patient");
-      setCurrentPatientId(null);
+      // Keep existing states from localStorage
       const user = sessionStorage.getItem("activeUser");
       if (user) {
         setPatients(prev => ({
@@ -268,6 +274,35 @@ function MainApp() {
       navigate("/login", { replace: true });
     }
   }, [location.pathname]);
+
+  // Persist routing and selection states to localStorage
+  useEffect(() => {
+    if (currentPatientId) {
+      localStorage.setItem("currentPatientId", currentPatientId);
+    } else {
+      localStorage.removeItem("currentPatientId");
+    }
+  }, [currentPatientId]);
+
+  useEffect(() => {
+    if (quickActivePatientId) {
+      localStorage.setItem("quickActivePatientId", quickActivePatientId);
+    } else {
+      localStorage.removeItem("quickActivePatientId");
+    }
+  }, [quickActivePatientId]);
+
+  useEffect(() => {
+    if (activePage) {
+      localStorage.setItem("activePage", activePage);
+    }
+  }, [activePage]);
+
+  useEffect(() => {
+    if (patientActivePage) {
+      localStorage.setItem("patientActivePage", patientActivePage);
+    }
+  }, [patientActivePage]);
 
   useEffect(() => {
     if (qrModalOpen) {
@@ -675,6 +710,11 @@ FINDINGS: ${rad.report}
               sessionStorage.removeItem("activeUser");
               setCurrentPatientId(null);
               setQuickActivePatientId(null);
+              setActivePage("homePage");
+              localStorage.removeItem("currentPatientId");
+              localStorage.removeItem("quickActivePatientId");
+              localStorage.removeItem("activePage");
+              localStorage.removeItem("patientActivePage");
               navigate("/login");
               showToast("تم تسجيل الخروج بنجاح", "success");
             }}
@@ -690,6 +730,11 @@ FINDINGS: ${rad.report}
             onLogout={() => {
               sessionStorage.removeItem("activeUser");
               setCurrentPatientId(null);
+              setPatientActivePage("homePage");
+              localStorage.removeItem("currentPatientId");
+              localStorage.removeItem("quickActivePatientId");
+              localStorage.removeItem("activePage");
+              localStorage.removeItem("patientActivePage");
               navigate("/login");
               showToast("تم تسجيل الخروج بنجاح", "success");
             }}
