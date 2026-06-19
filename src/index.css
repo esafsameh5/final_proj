@@ -1574,4 +1574,216 @@ body.font-size-large .card p {
   }
 }
 
+/* Emergency Page Custom Layout Styles */
+.emergency-container {
+  border: 2px solid var(--accent-red);
+  background: rgba(239, 68, 68, 0.02);
+  padding: 25px;
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  margin-top: 15px;
+}
+
+.emergency-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 2px solid var(--accent-red-light);
+  padding-bottom: 15px;
+}
+
+.emergency-icon {
+  font-size: 32px;
+}
+
+.emergency-title {
+  color: var(--accent-red);
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.emergency-subtitle {
+  margin: 4px 0 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.emergency-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+  margin-top: 20px;
+}
+
+.emergency-card {
+  background: white;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.emergency-card.full-width {
+  grid-column: span 2;
+}
+
+.emergency-card-title {
+  margin: 0;
+  color: var(--accent-red);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.emergency-card-title.highlight-primary {
+  color: var(--primary);
+}
+
+.emergency-card-value {
+  font-weight: 800;
+}
+
+.emergency-card-value.blood-type {
+  font-size: 28px;
+  color: var(--accent-red);
+}
+
+.emergency-card-value.allergy-info {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-red);
+}
+
+.emergency-card-text {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.emergency-card-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.emergency-contacts-section {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1.5px solid var(--accent-red-light);
+}
+
+.contacts-title {
+  margin: 0 0 15px 0;
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.emergency-contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.contact-item {
+  background: white;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.contact-item.full-width {
+  grid-column: span 2;
+}
+
+.contact-label {
+  font-size: 14px;
+}
+
+.contact-value {
+  font-weight: bold;
+  font-size: 16px;
+  font-family: "Outfit", sans-serif;
+}
+
+.contact-value.red-text {
+  color: var(--accent-red);
+}
+
+.contact-value.primary-text {
+  color: var(--primary);
+}
+
+.name-phone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.phone-number {
+  font-family: "Outfit", sans-serif;
+  color: var(--text-muted);
+  font-size: 14.5px;
+  display: inline-block;
+  direction: ltr;
+}
+
+/* Responsiveness for Emergency Page */
+@media (max-width: 768px) {
+  .emergency-contacts-grid {
+    grid-template-columns: 1fr;
+  }
+  .contact-item.full-width {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .emergency-container {
+    padding: 15px;
+  }
+  
+  .emergency-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .emergency-title {
+    font-size: 18px;
+  }
+  
+  .emergency-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .emergency-card.full-width {
+    grid-column: span 1;
+  }
+  
+  .emergency-card {
+    padding: 15px;
+  }
+  
+  .contact-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+  
+  .name-phone {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 
