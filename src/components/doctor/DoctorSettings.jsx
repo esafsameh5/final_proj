@@ -1,4 +1,6 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function DoctorSettings({
   doctorInfo,
@@ -19,6 +21,7 @@ function DoctorSettings({
           <h2>⚙️ إعدادات النظام الطبية</h2>
           <p>إدارة ملفك الشخصي، تفاصيل جهة العمل، إعدادات الأمان والإشعارات</p>
         </div>
+        <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
       </div>
 
       <div className="content" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "30px" }}>

@@ -149,7 +149,7 @@ export default function Login({ showToast }) {
 
     sessionStorage.setItem("activeUser", formData.username.trim());
     showToast?.(`تم تسجيل الدخول بنجاح للمستخدم ${formData.username}.`, "success");
-    navigate(formData.accountType === "doctor" ? "/doctor" : "/patient");
+    navigate(formData.accountType === "doctor" ? "/doctor" : formData.accountType === "hospital" ? "/hospital" : "/patient");
   };
 
   const handleSmartCard = () => {
@@ -436,6 +436,7 @@ export default function Login({ showToast }) {
                   <option value="" disabled hidden>اختر نوع الحساب</option>
                   <option value="patient">مواطن / مريض</option>
                   <option value="doctor">طبيب / ممارس</option>
+                  <option value="hospital">مدير المستشفى / الإدارة</option>
                 </select>
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,4 +1,6 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function PatientProfile({ patients }) {
   const patient = patients["H-2026-001"];
@@ -10,6 +12,7 @@ function PatientProfile({ patients }) {
           <h2>📋 ملفي الصحي الكامل</h2>
           <p>التفاصيل الديموغرافية والخط الزمني لتاريخك العلاجي الموثق</p>
         </div>
+        <HeaderUserBadge name={patient.name} />
       </div>
 
       <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "25px" }}>

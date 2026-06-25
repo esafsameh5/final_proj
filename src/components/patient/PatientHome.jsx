@@ -1,4 +1,6 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function PatientHome({ patients }) {
   const patient = patients["H-2026-001"];
@@ -10,10 +12,11 @@ function PatientHome({ patients }) {
           <h2>مرحبًا {patient.name} 👋</h2>
           <p>ملفك الطبي الموحد وبوابة صحتك الرقمية</p>
         </div>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-muted)", background: "var(--primary-light)", padding: "6px 12px", borderRadius: "20px", border: "1.5px solid var(--border-color)" }}>
             Patient ID: <span style={{ fontFamily: "Outfit", fontWeight: "700", color: "var(--primary)" }}>{patient.id}</span>
           </span>
+          <HeaderUserBadge name={patient.name} />
         </div>
       </div>
 

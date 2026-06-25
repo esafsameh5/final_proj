@@ -74,6 +74,8 @@ function DoctorSidebar({
         الإعدادات
       </a>
       
+      <hr style={{ border: "none", borderTop: "1px solid rgba(255, 255, 255, 0.15)", margin: "10px 8px" }} />
+      
       <a 
         className="nav-link logout-link" 
         onClick={onLogout}

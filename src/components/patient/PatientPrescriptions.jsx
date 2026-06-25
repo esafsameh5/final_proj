@@ -1,4 +1,6 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function PatientPrescriptions({ patients }) {
   const patient = patients["H-2026-001"];
@@ -10,6 +12,7 @@ function PatientPrescriptions({ patients }) {
           <h2>💊 الوصفات الطبية الحالية والنشطة</h2>
           <p>جدول العلاج الدوائي المعتمد من الأطباء المعالجين</p>
         </div>
+        <HeaderUserBadge name={patient.name} />
       </div>
 
       <div className="box">

@@ -1,6 +1,8 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
 
-function PatientSettings({ showToast }) {
+function PatientSettings({ patients, showToast }) {
+  const patient = patients["H-2026-001"];
   return (
     <div id="patientSettingsPage" className="page-content active">
       <div className="topbar">
@@ -8,6 +10,7 @@ function PatientSettings({ showToast }) {
           <h2>⚙️ إعدادات حساب المواطن</h2>
           <p>إدارة بيانات حسابك، تفضيلات الأمان، وإعدادات اللغة والخصوصية</p>
         </div>
+        <HeaderUserBadge name={patient.name} />
       </div>
 
       <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "25px" }}>

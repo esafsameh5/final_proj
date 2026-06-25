@@ -1,5 +1,7 @@
 import React from "react";
 import PdfViewer from "../common/PdfViewer";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function PatientLabs({
   patients,
@@ -18,6 +20,7 @@ function PatientLabs({
           <h2>🧪 التحاليل الطبية والمخبرية</h2>
           <p>استعرض تقارير التحاليل المرفوعة والنتائج الحيوية الموثقة</p>
         </div>
+        <HeaderUserBadge name={patient.name} />
       </div>
 
       <div className="box">

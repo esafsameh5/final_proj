@@ -22,6 +22,7 @@ function PatientSidebar({
       <a className={`nav-link emergency-nav ${patientActivePage === 'emergency' ? 'active' : ''}`} onClick={() => { setPatientActivePage('emergency'); setSidebarOpen(false); }}>الطوارئ</a>
       <a className={`nav-link ${patientActivePage === 'notifications' ? 'active' : ''}`} onClick={() => { setPatientActivePage('notifications'); setSidebarOpen(false); }}>الإشعارات</a>
       <a className={`nav-link ${patientActivePage === 'settings' ? 'active' : ''}`} onClick={() => { setPatientActivePage('settings'); setSidebarOpen(false); }}>الإعدادات</a>
+      <hr style={{ border: "none", borderTop: "1px solid rgba(255, 255, 255, 0.15)", margin: "10px 8px" }} />
       <a className="nav-link logout-link" onClick={onLogout}>تسجيل خروج</a>
     </aside>
   );

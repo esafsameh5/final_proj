@@ -1,4 +1,6 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function DoctorPatientProfile({
   activePatient,
@@ -26,35 +28,38 @@ function DoctorPatientProfile({
           <p>السجل الموحد للمواطن - تصفح وتحرير الملف الكامل</p>
         </div>
 
-        <div style={{ position: "relative", width: "280px", boxSizing: "border-box" }}>
-          <input 
-            type="text" 
-            placeholder="ابحث بالاسم أو Health ID..." 
-            value={patientSearch}
-            onChange={(e) => handleSearchPatient(e.target.value)}
-            style={{ width: "100%", boxSizing: "border-box" }} 
-          />
-          {patientSearchOpen && (
-            <div style={{ display: "block", position: "absolute", top: "100%", right: "0", left: "0", background: "white", border: "1.5px solid var(--border-color)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)", zIndex: "100", maxHeight: "200px", overflowY: "auto", marginTop: "5px" }}>
-              {Object.keys(patients)
-                .filter(id => id.toLowerCase().includes(patientSearch.toLowerCase()) || patients[id].name.toLowerCase().includes(patientSearch.toLowerCase()))
-                .map(id => (
-                  <div 
-                    key={id}
-                    onClick={() => handleSelectSearchPatient(id)} 
-                    style={{ padding: "10px 15px", cursor: "pointer", borderBottom: "1px solid var(--border-color)", textAlign: "right", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--primary-light)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "white"}
-                  >
-                    <span style={{ fontWeight: "600", color: "var(--primary)" }}>{patients[id].name}</span>
-                    <span style={{ fontFamily: "Outfit", fontSize: "12px", background: "var(--primary-light)", color: "var(--primary)", padding: "2px 6px", borderRadius: "4px" }}>{id}</span>
-                  </div>
-                ))}
-              {Object.keys(patients).filter(id => id.toLowerCase().includes(patientSearch.toLowerCase()) || patients[id].name.toLowerCase().includes(patientSearch.toLowerCase())).length === 0 && (
-                <div style={{ padding: "12px", fontSize: "13.5px", color: "var(--text-muted)", textAlign: "center" }}>لا توجد نتائج مطابقة</div>
-              )}
-            </div>
-          )}
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ position: "relative", width: "280px", boxSizing: "border-box" }}>
+            <input 
+              type="text" 
+              placeholder="ابحث بالاسم أو Health ID..." 
+              value={patientSearch}
+              onChange={(e) => handleSearchPatient(e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box" }} 
+            />
+            {patientSearchOpen && (
+              <div style={{ display: "block", position: "absolute", top: "100%", right: "0", left: "0", background: "white", border: "1.5px solid var(--border-color)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)", zIndex: "100", maxHeight: "200px", overflowY: "auto", marginTop: "5px" }}>
+                {Object.keys(patients)
+                  .filter(id => id.toLowerCase().includes(patientSearch.toLowerCase()) || patients[id].name.toLowerCase().includes(patientSearch.toLowerCase()))
+                  .map(id => (
+                    <div 
+                      key={id}
+                      onClick={() => handleSelectSearchPatient(id)} 
+                      style={{ padding: "10px 15px", cursor: "pointer", borderBottom: "1px solid var(--border-color)", textAlign: "right", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--primary-light)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                    >
+                      <span style={{ fontWeight: "600", color: "var(--primary)" }}>{patients[id].name}</span>
+                      <span style={{ fontFamily: "Outfit", fontSize: "12px", background: "var(--primary-light)", color: "var(--primary)", padding: "2px 6px", borderRadius: "4px" }}>{id}</span>
+                    </div>
+                  ))}
+                {Object.keys(patients).filter(id => id.toLowerCase().includes(patientSearch.toLowerCase()) || patients[id].name.toLowerCase().includes(patientSearch.toLowerCase())).length === 0 && (
+                  <div style={{ padding: "12px", fontSize: "13.5px", color: "var(--text-muted)", textAlign: "center" }}>لا توجد نتائج مطابقة</div>
+                )}
+              </div>
+            )}
+          </div>
+          <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
         </div>
       </div>
 

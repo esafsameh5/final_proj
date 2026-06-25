@@ -3,6 +3,7 @@ import { BrowserRouter as Router, useNavigate, useLocation } from "react-router-
 
 // Common Components
 import ToastContainer from "./components/common/ToastContainer";
+import ConfirmModal from "./components/common/ConfirmModal";
 
 // Doctor Components
 import DoctorSidebar from "./components/doctor/DoctorSidebar";
@@ -34,6 +35,16 @@ import PatientNotifications from "./components/patient/PatientNotifications";
 import PatientSettings from "./components/patient/PatientSettings";
 import LoginPage from "./pages/Login";
 import ForgotPasswordPage from "./pages/ForgotPassword";
+
+// Hospital Components
+import HospitalSidebar from "./components/hospital/HospitalSidebar";
+import HospitalDashboard from "./pages/hospital/HospitalDashboard";
+import HospitalDepartments from "./pages/hospital/HospitalDepartments";
+import HospitalDoctors from "./pages/hospital/HospitalDoctors";
+import HospitalInpatients from "./pages/hospital/HospitalInpatients";
+import HospitalRoomsBeds from "./pages/hospital/HospitalRoomsBeds";
+import HospitalOperations from "./pages/hospital/HospitalOperations";
+import HospitalReports from "./pages/hospital/HospitalReports";
 
 
 
@@ -153,15 +164,19 @@ const initialPatientsData = {
 function MainApp() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [patients, setPatients] = useState(initialPatientsData);
+  const [patients, setPatients] = useState(() => {
+    const saved = localStorage.getItem("patients");
+    return saved ? JSON.parse(saved) : initialPatientsData;
+  });
   const [currentPatientId, setCurrentPatientId] = useState(() => localStorage.getItem("currentPatientId") || null);
   const [quickActivePatientId, setQuickActivePatientId] = useState(() => localStorage.getItem("quickActivePatientId") || null);
   const [activePage, setActivePage] = useState(() => localStorage.getItem("activePage") || "homePage");
   const [activeSubTab, setActiveSubTab] = useState("visits-tab");
   const [activeTestsSubTab, setActiveTestsSubTab] = useState("labs-tab");
-  const [activeDashboard, setActiveDashboard] = useState("login"); // "login", "forgot-password", "doctor", "patient", "portal"
-  const [activeHeaderTab, setActiveHeaderTab] = useState("login"); // "login", "forgot-password", "doctor", "patient", "home"
+  const [activeDashboard, setActiveDashboard] = useState("login"); // "login", "forgot-password", "doctor", "patient", "portal", "hospital"
+  const [activeHeaderTab, setActiveHeaderTab] = useState("login"); // "login", "forgot-password", "doctor", "patient", "home", "hospital"
   const [patientActivePage, setPatientActivePage] = useState(() => localStorage.getItem("patientActivePage") || "homePage");
+  const [hospitalActivePage, setHospitalActivePage] = useState(() => localStorage.getItem("hospitalActivePage") || "dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
 
@@ -178,6 +193,14 @@ function MainApp() {
   const [editPrescriptionState, setEditPrescriptionState] = useState(null); // { index, prescription }
   const [referralModalOpen, setReferralModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    confirmText: "تأكيد الحذف",
+    type: "danger"
+  });
 
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfType, setPdfType] = useState("");
@@ -188,13 +211,16 @@ function MainApp() {
   const [newReferral, setNewReferral] = useState({ type: "معمل", destination: "", reason: "", notes: "" });
   const [newUpload, setNewUpload] = useState({ type: "lab", name: "", summary: "", file: null });
 
-  const [doctorInfo, setDoctorInfo] = useState({
-    name: "د. أحمد محمد",
-    employeeId: "DOC-2026-9912",
-    specialization: "أخصائي أمراض باطنة وسكري",
-    email: "ahmed.mohamed@smarthealth.gov.eg",
-    phone: "+20 100 123 4567",
-    avatar: "/default_doctor.png"
+  const [doctorInfo, setDoctorInfo] = useState(() => {
+    const saved = localStorage.getItem("doctorInfo");
+    return saved ? JSON.parse(saved) : {
+      name: "د. أحمد محمد",
+      employeeId: "DOC-2026-9912",
+      specialization: "أخصائي أمراض باطنة وسكري",
+      email: "ahmed.mohamed@smarthealth.gov.eg",
+      phone: "+20 100 123 4567",
+      avatar: "/default_doctor.png"
+    };
   });
   const [editDoctorModalOpen, setEditDoctorModalOpen] = useState(false);
   const [tempDoctorInfo, setTempDoctorInfo] = useState({ ...doctorInfo });
@@ -270,6 +296,9 @@ function MainApp() {
           }
         }));
       }
+    } else if (path === "/hospital") {
+      setActiveDashboard("hospital");
+      setActiveHeaderTab("hospital");
     } else {
       navigate("/login", { replace: true });
     }
@@ -303,6 +332,20 @@ function MainApp() {
       localStorage.setItem("patientActivePage", patientActivePage);
     }
   }, [patientActivePage]);
+
+  useEffect(() => {
+    if (hospitalActivePage) {
+      localStorage.setItem("hospitalActivePage", hospitalActivePage);
+    }
+  }, [hospitalActivePage]);
+
+  useEffect(() => {
+    localStorage.setItem("patients", JSON.stringify(patients));
+  }, [patients]);
+
+  useEffect(() => {
+    localStorage.setItem("doctorInfo", JSON.stringify(doctorInfo));
+  }, [doctorInfo]);
 
   useEffect(() => {
     if (qrModalOpen) {
@@ -499,26 +542,36 @@ function MainApp() {
   };
 
   const handleDeletePrescription = (index) => {
-    if (window.confirm("هل أنت متأكد من حذف هذه الوصفة الطبية؟")) {
-      setPatients(prev => {
-        const updated = { ...prev };
-        const p = updated[currentPatientId];
-        const deletedPres = p.prescriptions[index];
-        p.prescriptions = p.prescriptions.filter((_, i) => i !== index);
-        
-        let meds = p.prescriptions.map(pr => `${pr.name}`).slice(0, 2).join("، ");
-        if (p.prescriptions.length > 2) meds += "، ...إلخ";
-        p.currentMedications = meds || "لا توجد أدوية حالية مسجلة";
+    const p = patients[currentPatientId];
+    const deletedPres = p?.prescriptions?.[index];
+    setConfirmModal({
+      isOpen: true,
+      title: "تأكيد حذف الوصفة الطبية",
+      message: `هل أنت متأكد من حذف الوصفة الطبية لـ (${deletedPres?.name || ''}) نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`,
+      confirmText: "تأكيد الحذف",
+      type: "danger",
+      onConfirm: () => {
+        setPatients(prev => {
+          const updated = { ...prev };
+          const p = updated[currentPatientId];
+          const deletedPres = p.prescriptions[index];
+          p.prescriptions = p.prescriptions.filter((_, i) => i !== index);
+          
+          let meds = p.prescriptions.map(pr => `${pr.name}`).slice(0, 2).join("، ");
+          if (p.prescriptions.length > 2) meds += "، ...إلخ";
+          p.currentMedications = meds || "لا توجد أدوية حالية مسجلة";
 
-        p.timeline.unshift({
-          year: new Date().getFullYear().toString(),
-          event: `حذف وصفة طبية: ${deletedPres.name}`,
-          icon: "🗑️"
+          p.timeline.unshift({
+            year: new Date().getFullYear().toString(),
+            event: `حذف وصفة طبية: ${deletedPres.name}`,
+            icon: "🗑️"
+          });
+          return updated;
         });
-        return updated;
-      });
-      showToast("تم حذف الوصفة الطبية بنجاح", "success");
-    }
+        showToast("تم حذف الوصفة الطبية بنجاح", "success");
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   const handleSaveEditPrescription = (index, updatedPres) => {
@@ -741,6 +794,28 @@ FINDINGS: ${rad.report}
           />
         )}
 
+        {activeDashboard === "hospital" && (
+          <HospitalSidebar
+            sidebarOpen={sidebarOpen}
+            activePage={hospitalActivePage}
+            setActivePage={setHospitalActivePage}
+            setSidebarOpen={setSidebarOpen}
+            onLogout={() => {
+              sessionStorage.removeItem("activeUser");
+              setCurrentPatientId(null);
+              setQuickActivePatientId(null);
+              setActivePage("homePage");
+              localStorage.removeItem("currentPatientId");
+              localStorage.removeItem("quickActivePatientId");
+              localStorage.removeItem("activePage");
+              localStorage.removeItem("patientActivePage");
+              localStorage.removeItem("hospitalActivePage");
+              navigate("/login");
+              showToast("تم تسجيل الخروج بنجاح", "success");
+            }}
+          />
+        )}
+
         {activeDashboard !== "portal" && (
           <main className="main">
             {activeDashboard === "doctor" ? (
@@ -796,6 +871,7 @@ FINDINGS: ${rad.report}
                   activePatient ? (
                     <DoctorTestsLabs
                       activePatient={activePatient}
+                      doctorInfo={doctorInfo}
                       testsSearch={testsSearch}
                       setTestsSearch={setTestsSearch}
                       testsUrgentCount={testsUrgentCount}
@@ -822,6 +898,7 @@ FINDINGS: ${rad.report}
                   activePatient ? (
                     <DoctorEmergency
                       activePatient={activePatient}
+                      doctorInfo={doctorInfo}
                       setActivePage={setActivePage}
                     />
                   ) : (
@@ -846,7 +923,7 @@ FINDINGS: ${rad.report}
                   />
                 )}
               </>
-            ) : (
+            ) : activeDashboard === "patient" ? (
               <>
                 {patientActivePage === 'homePage' && (
                   <PatientHome patients={patients} />
@@ -883,7 +960,7 @@ FINDINGS: ${rad.report}
                 )}
 
                 {patientActivePage === 'medicalCard' && (
-                  <PatientMedicalCard showToast={showToast} />
+                  <PatientMedicalCard patients={patients} showToast={showToast} />
                 )}
 
                 {patientActivePage === 'emergency' && (
@@ -895,10 +972,40 @@ FINDINGS: ${rad.report}
                 )}
 
                 {patientActivePage === 'settings' && (
-                  <PatientSettings showToast={showToast} />
+                  <PatientSettings patients={patients} showToast={showToast} />
                 )}
               </>
-            )}
+            ) : activeDashboard === "hospital" ? (
+              <>
+                {hospitalActivePage === 'dashboard' && (
+                  <HospitalDashboard setActivePage={setHospitalActivePage} showToast={showToast} />
+                )}
+
+                {hospitalActivePage === 'departments' && (
+                  <HospitalDepartments showToast={showToast} />
+                )}
+
+                {hospitalActivePage === 'doctors' && (
+                  <HospitalDoctors showToast={showToast} />
+                )}
+
+                {hospitalActivePage === 'inpatients' && (
+                  <HospitalInpatients showToast={showToast} />
+                )}
+
+                {hospitalActivePage === 'rooms' && (
+                  <HospitalRoomsBeds showToast={showToast} />
+                )}
+
+                {hospitalActivePage === 'operations' && (
+                  <HospitalOperations showToast={showToast} />
+                )}
+
+                {hospitalActivePage === 'reports' && (
+                  <HospitalReports showToast={showToast} />
+                )}
+              </>
+            ) : null}
           </main>
         )}
       </div>
@@ -1003,6 +1110,15 @@ FINDINGS: ${rad.report}
         submitEditDoctorForm={submitEditDoctorForm}
       />
 
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
       <ToastContainer toasts={toasts} setToasts={setToasts} />
     </div>
   );

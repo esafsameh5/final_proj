@@ -1,8 +1,11 @@
 import React from "react";
 import PdfViewer from "../common/PdfViewer";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function DoctorTestsLabs({
   activePatient,
+  doctorInfo,
   testsSearch,
   setTestsSearch,
   testsUrgentCount,
@@ -25,12 +28,15 @@ function DoctorTestsLabs({
           <h2>🧪 مكتبة التحاليل والأشعة الطبية</h2>
           <p>مراجعة تقارير الأشعة المرفوعة وملفات الـ PDF للتحاليل الصادرة</p>
         </div>
-        <input 
-          type="text" 
-          placeholder="ابحث عن تقرير..." 
-          value={testsSearch}
-          onChange={(e) => setTestsSearch(e.target.value)}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <input 
+            type="text" 
+            placeholder="ابحث عن تقرير..." 
+            value={testsSearch}
+            onChange={(e) => setTestsSearch(e.target.value)}
+          />
+          <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
+        </div>
       </div>
 
       <div id="active-patient-tests-banner" style={{ background: "rgba(255, 255, 255, 0.85)", backdropFilter: "blur(10px)", borderRight: "4px solid var(--secondary)", padding: "12px 20px", borderRadius: "var(--radius-md)", marginBottom: "25px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-color)" }}>

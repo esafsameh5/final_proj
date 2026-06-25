@@ -1,6 +1,8 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
 
-function PatientMedicalCard({ showToast }) {
+function PatientMedicalCard({ patients, showToast }) {
+  const patient = patients["H-2026-001"];
   return (
     <div id="patientMedicalCardPage" className="page-content active">
       <div className="topbar">
@@ -8,6 +10,7 @@ function PatientMedicalCard({ showToast }) {
           <h2>💳 كارت الصحة الرقمية الذكي</h2>
           <p>بطاقتك الصحية الذكية ورموز مسح الهوية الطبية الفورية</p>
         </div>
+        <HeaderUserBadge name={patient.name} />
       </div>
 
       <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "30px" }}>

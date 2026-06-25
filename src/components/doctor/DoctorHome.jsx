@@ -1,4 +1,6 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function DoctorHome({
   doctorInfo,
@@ -20,11 +22,6 @@ function DoctorHome({
   return (
     <div id="homePage" className="page-content active">
       <div className="topbar">
-        <div>
-          <h2>مرحبًا {doctorInfo.name} 👋</h2>
-          <p>لوحة متابعة المرضى والسجلات الطبية للعيادة</p>
-        </div>
-
         <div className="topbar-search-group">
           <input 
             type="text" 
@@ -35,6 +32,7 @@ function DoctorHome({
           <button className="btn" onClick={() => setQrModalOpen(true)}>📷 مسح QR</button>
           <button className="btn btn-secondary" onClick={() => setNfcModalOpen(true)}>💳 مسح NFC</button>
         </div>
+        <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
       </div>
 
       <div className="cards">

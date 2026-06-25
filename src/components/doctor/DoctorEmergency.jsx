@@ -1,6 +1,7 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
 
-function DoctorEmergency({ activePatient, setActivePage }) {
+function DoctorEmergency({ activePatient, doctorInfo, setActivePage }) {
   return (
     <div id="emergencyPage" className="page-content active">
       <div className="topbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid var(--border-color)", paddingBottom: "15px", marginBottom: "20px" }}>
@@ -8,7 +9,10 @@ function DoctorEmergency({ activePatient, setActivePage }) {
           <h2 style={{ color: "var(--accent-red)", margin: "0", fontSize: "22px", display: "flex", alignItems: "center", gap: "8px", fontWeight: "700" }}>🚨 لوحة التدخل السريع للطوارئ</h2>
           <p style={{ color: "var(--text-muted)", margin: "4px 0 0 0", fontSize: "13.5px" }}>بيانات إنقاذ الحياة الفورية للمواطن النشط</p>
         </div>
-        <div style={{ background: "var(--accent-red)", color: "white", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontWeight: "bold", fontSize: "12.5px" }}>كشف طوارئ نشط</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ background: "var(--accent-red)", color: "white", padding: "6px 12px", borderRadius: "var(--radius-sm)", fontWeight: "bold", fontSize: "12.5px" }}>كشف طوارئ نشط</div>
+          <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
+        </div>
       </div>
 
       <div className="box" style={{ padding: "20px", borderRight: "6px solid var(--accent-red)", marginBottom: "20px" }}>

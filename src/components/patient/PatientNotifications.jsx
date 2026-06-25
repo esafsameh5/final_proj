@@ -1,4 +1,6 @@
 import React from "react";
+import HeaderUserBadge from "../common/HeaderUserBadge";
+
 
 function PatientNotifications({ patients }) {
   const patient = patients["H-2026-001"];
@@ -10,6 +12,7 @@ function PatientNotifications({ patients }) {
           <h2>🔔 مركز الإشعارات والتنبيهات</h2>
           <p>تابع التحديثات والأنشطة الطبية الموثقة مؤخراً في ملفك الموحد</p>
         </div>
+        <HeaderUserBadge name={patient.name} />
       </div>
 
       <div className="box" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
