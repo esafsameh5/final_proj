@@ -322,7 +322,9 @@ export default function ForgotPassword({ showToast }) {
                       <option value="" disabled hidden>اختر نوع الحساب</option>
                       <option value="citizen">مواطن / مريض</option>
                       <option value="doctor">طبيب / ممارس</option>
-                      <option value="hospital">مستشفى</option>                    </select>
+                      <option value="hospital">مستشفى</option>
+                      <option value="ministry">وزارة الصحة / الإدارة المركزية</option>
+                    </select>
                     <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />

@@ -8,4 +8,23 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://digital-health-rest-api.runasp.net',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api-status': {
+        target: 'https://digital-health-rest-api.runasp.net',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/health': {
+        target: 'https://digital-health-rest-api.runasp.net',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

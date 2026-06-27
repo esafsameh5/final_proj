@@ -1840,5 +1840,230 @@ body.font-size-large .card p {
   border-color: var(--primary) !important;
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ministry-toolbar {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, auto)) minmax(260px, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.ministry-filter-control {
+  min-width: 0;
+}
+
+.ministry-filter-control select {
+  width: 100%;
+}
+
+.ministry-search-control {
+  position: relative;
+  min-width: 0;
+}
+
+.ministry-search-control input {
+  width: 100%;
+  padding-right: 42px !important;
+}
+
+.ministry-search-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.ministry-state-card {
+  min-height: 220px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ministry-state-card p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.ministry-state-card.error {
+  border-style: solid;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.ministry-action-menu {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ministry-action-menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: right;
+  transition: var(--transition);
+}
+
+.ministry-action-menu-item:hover {
+  background: #f8fafc;
+  color: var(--primary);
+}
+
+.ministry-action-menu-item.danger {
+  color: var(--accent-red);
+}
+
+.ministry-donut-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.ministry-donut-chart {
+  position: relative;
+  height: 220px;
+}
+
+.ministry-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ministry-donut-center strong {
+  font-family: "Outfit", sans-serif;
+  font-size: 28px;
+  color: var(--primary);
+}
+
+.ministry-donut-center span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ministry-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ministry-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  color: var(--text-dark);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ministry-legend-item span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ministry-legend-item b {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ministry-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ministry-shortcut {
+  min-height: 88px;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.ministry-shortcut svg {
+  font-size: 18px;
+  color: var(--primary);
+}
+
+@media (max-width: 1100px) {
+  .ministry-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ministry-shortcuts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .ministry-donut-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .ministry-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .ministry-shortcuts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ministry-donut-chart {
+    height: 190px;
+  }
+}
 
 

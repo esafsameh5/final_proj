@@ -1,6 +1,6 @@
 import React from "react";
 import HeaderUserBadge from "../common/HeaderUserBadge";
-
+import { QrCode } from "lucide-react";import { FaWifi } from "react-icons/fa6";
 
 function DoctorHome({
   doctorInfo,
@@ -25,12 +25,14 @@ function DoctorHome({
         <div className="topbar-search-group">
           <input 
             type="text" 
-            placeholder="ابحث عن مريض بالاسم..." 
+            placeholder="ابحث في قائمة مرضى اليوم..." 
             value={homeSearch}
             onChange={(e) => setHomeSearch(e.target.value)}
           />
-          <button className="btn" onClick={() => setQrModalOpen(true)}>📷 مسح QR</button>
-          <button className="btn btn-secondary" onClick={() => setNfcModalOpen(true)}>💳 مسح NFC</button>
+          <button className="btn" onClick={() => setQrModalOpen(true)}><QrCode className="his-icon" size={20} strokeWidth={2.2} />
+                              مسح رمز QR</button>
+          <button className="btn btn-secondary" onClick={() => setNfcModalOpen(true)}><FaWifi className="his-icon" size={18} style={{ transform: "rotate(90deg)" }}/>
+                          مسح كارت NFC</button>
         </div>
         <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
       </div>
@@ -39,8 +41,8 @@ function DoctorHome({
         <div className="card">
           <h3>مرضى العيادة اليوم</h3>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>12</p>
-            <span style={{ fontSize: "11.5px", background: "var(--accent-emerald-light)", color: "#065f46", padding: "4px 10px", borderRadius: "12px", fontWeight: "bold", marginBottom: "5px" }}>+15% 📈</span>
+            <p>{Object.keys(patients).length}</p>
+            <span style={{ fontSize: "11.5px", background: "var(--accent-emerald-light)", color: "#065f46", padding: "4px 10px", borderRadius: "12px", fontWeight: "bold", marginBottom: "5px" }}>نشط 🟢</span>
           </div>
         </div>
 
@@ -63,7 +65,7 @@ function DoctorHome({
 
       <div className="content">
         <div className="box">
-          <h2>قائمة المرضى</h2>
+          <h2>مرضى اليوم</h2>
           <div className="table-container">
             <table>
               <thead>
@@ -77,7 +79,7 @@ function DoctorHome({
               </thead>
               <tbody id="home-patients-tbody">
                 {Object.keys(patients)
-                  .filter(id => patients[id].name.includes(homeSearch) || patients[id].age.toString().includes(homeSearch))
+                  .filter(id => patients[id].name.toLowerCase().includes(homeSearch.toLowerCase()) || id.toLowerCase().includes(homeSearch.toLowerCase()))
                   .map(id => {
                     const p = patients[id];
                     const isSelected = activePatient && activePatient.id === p.id;

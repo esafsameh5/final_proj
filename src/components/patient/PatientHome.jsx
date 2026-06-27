@@ -2,47 +2,90 @@ import React from "react";
 import HeaderUserBadge from "../common/HeaderUserBadge";
 
 
-function PatientHome({ patients }) {
-  const patient = patients["H-2026-001"];
+function PatientHome({ patients, topNotifications, hasUnread, unreadCount }) {
+  const patientId = sessionStorage.getItem("userId") || "H-2026-001";
+  const patient = patients ? (patients[patientId] || patients["H-2026-001"]) : null;
+
+  if (!patients) {
+    return (
+      <div id="patientHomePage" className="page-content active" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
+        <p>جاري تحميل البيانات...</p>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div id="patientHomePage" className="page-content active" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
+        <p>لم يتم العثور على بيانات المريض.</p>
+      </div>
+    );
+  }
+
+  const hasAllergies = patient.allergies && 
+    patient.allergies !== "لا يوجد حساسية معروفة" && 
+    patient.allergies !== "لا يوجد" && 
+    patient.allergies !== "None" &&
+    patient.allergies.trim() !== "";
 
   return (
     <div id="patientHomePage" className="page-content active">
       <div className="topbar">
         <div>
-          <h2>مرحبًا {patient.name} 👋</h2>
+          <h2>مرحبًا {patient.name || "المريض"} 👋</h2>
           <p>ملفك الطبي الموحد وبوابة صحتك الرقمية</p>
         </div>
         <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
           <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-muted)", background: "var(--primary-light)", padding: "6px 12px", borderRadius: "20px", border: "1.5px solid var(--border-color)" }}>
-            Patient ID: <span style={{ fontFamily: "Outfit", fontWeight: "700", color: "var(--primary)" }}>{patient.id}</span>
+            Patient ID: <span style={{ fontFamily: "Outfit", fontWeight: "700", color: "var(--primary)" }}>{patient.id || ""}</span>
           </span>
-          <HeaderUserBadge name={patient.name} />
+          <HeaderUserBadge name={patient.name || "المريض"} badgeCount={unreadCount} hasUnread={hasUnread} />
         </div>
       </div>
 
       {/* Medical Alerts Banner */}
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "25px" }}>
-        <div className="alert-box danger" style={{ margin: "0" }}>
-          <span className="alert-icon">🚨</span>
-          <div className="alert-content">
-            <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>حساسية شديدة مؤكدة</h4>
-            <p style={{ margin: "0", fontSize: "12.5px" }}>لديك حساسية من {patient.allergies}. الرجاء إبلاغ أي منشأة صحية قبل تلقي العلاج.</p>
+        {hasAllergies && (
+          <div className="alert-box danger" style={{ margin: "0" }}>
+            <span className="alert-icon">🚨</span>
+            <div className="alert-content">
+              <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>حساسية شديدة مؤكدة</h4>
+              <p style={{ margin: "0", fontSize: "12.5px" }}>لديك حساسية من {patient.allergies}. الرجاء إبلاغ أي منشأة صحية قبل تلقي العلاج.</p>
+            </div>
           </div>
-        </div>
-        <div className="alert-box warning" style={{ margin: "0" }}>
-          <span className="alert-icon">⚠️</span>
-          <div className="alert-content">
-            <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>تحليل سكر تراكمي معلق</h4>
-            <p style={{ margin: "0", fontSize: "12.5px" }}>آخر تحليل سكر تراكمي مسجل منذ 6 أشهر. يُنصح بإعادة التحليل للمتابعة.</p>
-          </div>
-        </div>
-        <div className="alert-box info" style={{ margin: "0" }}>
-          <span className="alert-icon">📅</span>
-          <div className="alert-content">
-            <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>موعد متابعة مقترح</h4>
-            <p style={{ margin: "0", fontSize: "12.5px" }}>فحص دوري مقترح لعيادة الباطنة والسكري في غضون الشهر القادم.</p>
-          </div>
-        </div>
+        )}
+        
+        {topNotifications && topNotifications.map((notif) => {
+          const priority = String(notif.priority || "").toLowerCase();
+          const type = String(notif.type || "").toLowerCase();
+          
+          let alertClass = "info";
+          let icon = "📅";
+          
+          if (priority === "critical" || type === "emergencyalert" || type === "securityalert") {
+            alertClass = "danger";
+            icon = "🚨";
+          } else if (priority === "high" || type === "medicationreminder") {
+            alertClass = "warning";
+            icon = "⚠️";
+          } else if (type === "labresultready") {
+            icon = "🧪";
+            alertClass = "info";
+          } else if (type === "radiologyresultready") {
+            icon = "🩻";
+            alertClass = "info";
+          }
+          
+          return (
+            <div key={notif.id} className={`alert-box ${alertClass}`} style={{ margin: "0" }}>
+              <span className="alert-icon">{icon}</span>
+              <div className="alert-content">
+                <h4 style={{ margin: "0 0 2px 0", fontWeight: "700" }}>{notif.title}</h4>
+                <p style={{ margin: "0", fontSize: "12.5px" }}>{notif.body}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px" }}>
@@ -78,7 +121,7 @@ function PatientHome({ patients }) {
               <div style={{ flex: "1" }}>
                 <h4 style={{ margin: "0 0 2px 0", fontSize: "14px" }}>آخر تحليل طبي مرفوع</h4>
                 <p style={{ margin: "0", color: "var(--text-muted)", fontSize: "12.5px" }}>
-                  {patient.labs[0]?.name || "تحليل صورة دم كاملة"} ({patient.labs[0]?.date || "2026/05/07"})
+                  {patient.labs?.[0]?.name || "تحليل صورة دم كاملة"} ({patient.labs?.[0]?.date || "2026/05/07"})
                 </p>
               </div>
             </div>
@@ -87,7 +130,7 @@ function PatientHome({ patients }) {
               <div style={{ flex: "1" }}>
                 <h4 style={{ margin: "0 0 2px 0", fontSize: "14px" }}>آخر أشعة طبية مرفوعة</h4>
                 <p style={{ margin: "0", color: "var(--text-muted)", fontSize: "12.5px" }}>
-                  {patient.radiology[0]?.name || "أشعة صدر عادية"} ({patient.radiology[0]?.date || "2026/05/06"})
+                  {patient.radiology?.[0]?.name || "أشعة صدر عادية"} ({patient.radiology?.[0]?.date || "2026/05/06"})
                 </p>
               </div>
             </div>
@@ -96,7 +139,7 @@ function PatientHome({ patients }) {
               <div style={{ flex: "1" }}>
                 <h4 style={{ margin: "0 0 2px 0", fontSize: "14px" }}>آخر وصفة علاجية</h4>
                 <p style={{ margin: "0", color: "var(--text-muted)", fontSize: "12.5px" }}>
-                  {patient.prescriptions[0]?.name || "أملوديبين Amlodipine"} ({patient.prescriptions[0]?.date || "2026/05/07"})
+                  {patient.prescriptions?.[0]?.name || "أملوديبين Amlodipine"} ({patient.prescriptions?.[0]?.date || "2026/05/07"})
                 </p>
               </div>
             </div>
@@ -105,7 +148,7 @@ function PatientHome({ patients }) {
               <div style={{ flex: "1" }}>
                 <h4 style={{ margin: "0 0 2px 0", fontSize: "14px" }}>آخر تشخيص وزيارة طبيب</h4>
                 <p style={{ margin: "0", color: "var(--text-muted)", fontSize: "12.5px" }}>
-                  {patient.visits[0]?.diagnosis || "التهاب بسيط في الجهاز التنفسي"} ({patient.visits[0]?.date || "2026/05/07"})
+                  {patient.visits?.[0]?.diagnosis || "التهاب بسيط في الجهاز التنفسي"} ({patient.visits?.[0]?.date || "2026/05/07"})
                 </p>
               </div>
             </div>

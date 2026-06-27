@@ -27,12 +27,11 @@ function DoctorSidebar({
         الرئيسية
       </a>
       <a 
-        className="nav-link" 
+        className={`nav-link ${activePage === 'searchPage' ? 'active' : ''}`} 
         onClick={() => { 
-          setActivePage('homePage'); 
+          setActivePage('searchPage'); 
           setSidebarOpen(false); 
           setPdfOpen(false); 
-          setTimeout(() => document.querySelector('.topbar input')?.focus(), 150); 
         }}
       >
         البحث عن مريض

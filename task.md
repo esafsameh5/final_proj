@@ -1,0 +1,39 @@
+- [x] Phase 1: Hospital Dashboard
+  - [x] Resolve active facilityId (from session, JWT, or existing fallback)
+  - [x] Implement GET /api/v1/facilities/{facilityId}/analytics
+  - [x] Replace KPIs, stats, occupancy, and analytics charts
+  - [x] Remove undocumented features/charts from Dashboard
+- [x] Phase 2: Doctors
+  - [x] Integrate GET /api/v1/users?role=Doctor
+  - [x] Keep search and filters, remove undocumented actions (promote, suspend, change shift, etc.)
+- [x] Phase 3: Departments
+  - [x] Integrate GET /api/v1/facilities/{facilityId}/departments
+  - [x] Integrate POST /api/v1/facilities/{facilityId}/departments
+  - [x] Integrate PUT /api/v1/facilities/departments/{departmentId}
+  - [x] Integrate DELETE /api/v1/facilities/departments/{departmentId} (soft delete)
+  - [x] Remove localStorage, map active stats, remove any undocumented actions
+- [x] Phase 4: Inpatients
+  - [x] Integrate GET /api/v1/facilities/{facilityId}/admissions
+  - [x] Integrate POST /api/v1/operations/admissions
+  - [x] Integrate PATCH /api/v1/operations/admissions/{id}/discharge
+  - [x] Remove undocumented actions (change status, request test, requests, etc.)
+- [x] Phase 5: Rooms & Beds
+  - [x] Integrate GET /api/v1/facilities/{facilityId}/rooms
+  - [x] Integrate GET /api/v1/facilities/{facilityId}/beds
+  - [x] Integrate POST /api/v1/facilities/rooms
+  - [x] Integrate POST /api/v1/facilities/beds
+  - [x] Integrate PATCH /api/v1/beds/{id}/status
+  - [x] Remove mock rooms/beds. Remove undocumented features (maintenance room, view info, etc.)
+- [x] Phase 6: Operations
+  - [x] Integrate GET /api/v1/facilities/{facilityId}/operations
+  - [x] Integrate POST /api/v1/operations/follow-ups
+  - [x] Integrate PATCH /api/v1/operations/follow-ups/{id}/complete
+  - [x] Remove undocumented actions (reschedule, cancel, custom buttons, etc.)
+- [x] Phase 7: Reports
+  - [x] Integrate report endpoints:
+    - GET /api/v1/facilities/{facilityId}/reports/performance
+    - GET /api/v1/facilities/{facilityId}/reports/occupancy
+    - GET /api/v1/facilities/{facilityId}/reports/departments
+    - GET /api/v1/facilities/{facilityId}/reports/operations
+    - GET /api/v1/facilities/{facilityId}/reports/patients
+  - [x] Replace remaining charts with backend data, remove unsupported mock charts/statistics

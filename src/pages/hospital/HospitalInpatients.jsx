@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import HeaderUserBadge from "../../components/common/HeaderUserBadge";
+import ConfirmModal from "../../components/common/ConfirmModal";
+import api from "../../utils/api";
 
 import { 
   FaBed, 
@@ -11,36 +13,30 @@ import {
   FaMagnifyingGlass, 
   FaFilter, 
   FaChevronDown, 
-  FaRegBell,
-  FaCalendarDays,
-  FaIdCardClip,
-  FaFileMedical,
-  FaVial,
-  FaXRay,
-  FaRightLeft,
-  FaHouseLaptop,
-  FaFilePdf,
-  FaCalendarCheck,
-  FaDoorOpen
+  FaDoorOpen,
+  FaSpinner
 } from "react-icons/fa6";
-import { initialInpatientsData } from "../../data/hospital/inpatients";
-import { initialDepartmentsData } from "../../data/hospital/departments";
-import { initialDoctorsData } from "../../data/hospital/doctors";
-import ConfirmModal from "../../components/common/ConfirmModal";
 
 function HospitalInpatients({ showToast }) {
-  const [inpatients, setInpatients] = useState(() => {
-    const saved = localStorage.getItem("hospital_inpatients");
-    return saved ? JSON.parse(saved) : initialInpatientsData;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("hospital_inpatients", JSON.stringify(inpatients));
-  }, [inpatients]);
+  const [inpatients, setInpatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDept, setSelectedDept] = useState("الأقسام");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
+
+  // Form dependency data from backend
+  const [dbPatients, setDbPatients] = useState([]);
+  const [dbDepts, setDbDepts] = useState([]);
+  const [dbBeds, setDbBeds] = useState([]);
+
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     title: "",
@@ -52,61 +48,99 @@ function HospitalInpatients({ showToast }) {
 
   // New Admission Form State
   const [newInpatient, setNewInpatient] = useState({
-    name: "",
-    medicalId: "",
-    department: "",
-    doctor: "",
-    roomType: "normal",
-    admissionDate: new Date().toISOString().split("T")[0],
-    status: "stable"
+    patientId: "",
+    departmentId: "",
+    bedId: "",
+    notes: ""
   });
 
-  // Filter patients
-  const filteredInpatients = inpatients.filter(pat => {
-    const matchesSearch = pat.name.includes(searchTerm) || pat.medicalId.includes(searchTerm);
-    const matchesDept = selectedDept === "الأقسام" || pat.department === selectedDept;
-    return matchesSearch && matchesDept;
-  });
+  const facilityId = sessionStorage.getItem("facilityId") || "f203157f-0975-4bcf-b8c7-48c2fba672bf";
 
-  // Room type Arabic label
-  const getRoomTypeArabic = (type) => {
-    switch (type) {
-      case "normal": return "غرفة عادية";
-      case "private": return "غرفة خاصة";
-      case "icu": return "العناية المركزة";
-      default: return "غرفة عادية";
+  // Fetch admissions
+  const fetchAdmissions = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const response = await api.get(`/api/v1/facilities/${facilityId}/admissions`, {
+        params: {
+          Search: searchTerm || undefined,
+          Page: page,
+          PageSize: pageSize,
+          IncludeInactive: false // Active admissions only
+        }
+      });
+      if (response.data && response.data.success) {
+        const data = response.data.data;
+        const items = data.items || [];
+        const mapped = items.map(adm => ({
+          id: adm.hospitalAdmissionId || adm.id || "",
+          name: adm.patientDisplayName || adm.patientName || "مريض غير مسمى",
+          medicalId: adm.patientNationalNumber || adm.patientId || "-",
+          department: adm.departmentName || adm.medicalDepartmentName || "الجراحة العامة",
+          bedNumber: adm.bedNumber || "غير محدد",
+          admissionDate: adm.admittedAt ? adm.admittedAt.split("T")[0] : "-",
+          notes: adm.notes || "",
+          status: adm.status ? adm.status.toLowerCase() : "active"
+        }));
+        setInpatients(mapped);
+        setTotalPages(data.totalPages || 1);
+        setTotalCount(data.totalCount || items.length);
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      console.error("Failed to load admissions:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Status Arabic label
+  // Load modal dependencies
+  const loadModalData = async () => {
+    try {
+      const pRes = await api.get("/api/v1/users", { params: { role: "Patient", Page: 1, PageSize: 100 } });
+      setDbPatients(pRes.data?.data?.items || []);
+
+      const dRes = await api.get(`/api/v1/facilities/${facilityId}/departments`, { params: { Page: 1, PageSize: 100 } });
+      setDbDepts(dRes.data?.data?.items || []);
+
+      const bRes = await api.get(`/api/v1/facilities/${facilityId}/beds`, { params: { status: "Available", Page: 1, PageSize: 100 } });
+      setDbBeds(bRes.data?.data?.items || []);
+    } catch (err) {
+      console.error("Failed to load admission dependencies:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdmissions();
+  }, [searchTerm, page]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      loadModalData();
+    }
+  }, [isModalOpen]);
+
+  // Filter patients by department locally (if dropdown filters are selected)
+  const filteredInpatients = inpatients.filter(pat => {
+    const matchesDept = selectedDept === "الأقسام" || pat.department === selectedDept;
+    return matchesDept;
+  });
+
   const getStatusBadge = (status) => {
     switch (status) {
+      case "active":
       case "stable":
-        return <span className="status">مستقر</span>;
-      case "observation":
-        return <span className="status" style={{ background: "var(--primary-light)", color: "var(--secondary)" }}>تحت الملاحظة</span>;
-      case "critical":
-        return <span className="danger">حرج</span>;
+        return <span className="status">نشط</span>;
+      case "discharged":
+        return <span className="status" style={{ background: "var(--primary-light)", color: "var(--secondary)" }}>تم الخروج</span>;
       default:
-        return <span className="status">مستقر</span>;
+        return <span className="status">نشط</span>;
     }
   };
 
-  // Row Action Handlers
-  const handleStatusChange = (id, newStatus) => {
-    let patientName = "";
-    setInpatients(prev => prev.map(p => {
-      if (p.id === id) {
-        patientName = p.name;
-        return { ...p, status: newStatus };
-      }
-      return p;
-    }));
-    setActiveDropdownId(null);
-    const statusAr = newStatus === 'stable' ? 'مستقر' : newStatus === 'observation' ? 'تحت الملاحظة' : 'حرج';
-    showToast?.(`تم تحديث الحالة الطبية للمريض ${patientName} بنجاح إلى: ${statusAr}.`, "success");
-  };
-
+  // Discharge Handler
   const handleDischarge = (id) => {
     const patient = inpatients.find(p => p.id === id);
     setConfirmModal({
@@ -115,54 +149,51 @@ function HospitalInpatients({ showToast }) {
       message: `هل أنت متأكد من تسجيل خروج المريض (${patient?.name || ''}) وإخلاء السرير الخاص به؟ لا يمكن التراجع عن هذا الإجراء.`,
       confirmText: "تسجيل خروج وإخلاء",
       type: "warning",
-      onConfirm: () => {
-        setInpatients(prev => prev.filter(p => p.id !== id));
-        showToast?.(`تم تسجيل خروج المريض ${patient?.name || ''} بنجاح.`, "success");
+      onConfirm: async () => {
+        try {
+          await api.patch(`/api/v1/operations/admissions/${id}/discharge`);
+          fetchAdmissions();
+          showToast?.(`تم تسجيل خروج المريض ${patient?.name || ''} بنجاح.`, "success");
+        } catch (err) {
+          console.error("Failed to discharge patient:", err);
+          showToast?.("فشل تسجيل خروج المريض من الخادم.", "danger");
+        }
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
       }
     });
     setActiveDropdownId(null);
   };
 
-  const handleActionToast = (actionName) => {
-    showToast?.(`سيتم إرسال طلب (${actionName}) للأنظمة الفرعية التابعة للمستشفى قريباً.`, "info");
-    setActiveDropdownId(null);
-  };
-
   // Add new inpatient submit
-  const handleAddInpatientSubmit = (e) => {
+  const handleAddInpatientSubmit = async (e) => {
     e.preventDefault();
-    if (!newInpatient.name || !newInpatient.medicalId || !newInpatient.department || !newInpatient.doctor) {
+    if (!newInpatient.patientId || !newInpatient.departmentId || !newInpatient.bedId) {
       showToast?.("يرجى ملء جميع الحقول المطلوبة.", "error");
       return;
     }
 
-    const newId = inpatients.length > 0 ? Math.max(...inpatients.map(p => p.id)) + 1 : 1;
-    const patientToAdd = {
-      id: newId,
-      name: newInpatient.name,
-      medicalId: newInpatient.medicalId.startsWith("P") ? newInpatient.medicalId : "P" + newInpatient.medicalId,
-      department: newInpatient.department,
-      doctor: newInpatient.doctor,
-      roomType: newInpatient.roomType,
-      admissionDate: newInpatient.admissionDate,
-      duration: "اليوم الأول",
-      status: newInpatient.status
-    };
-
-    setInpatients(prev => [...prev, patientToAdd]);
-    setIsModalOpen(false);
-    showToast?.(`تم تسجيل المريض ${patientToAdd.name} كنزيل بنجاح.`, "success");
-    // Reset Form
-    setNewInpatient({
-      name: "",
-      medicalId: "",
-      department: "",
-      doctor: "",
-      roomType: "normal",
-      admissionDate: new Date().toISOString().split("T")[0],
-      status: "stable"
-    });
+    try {
+      await api.post("/api/v1/operations/admissions", {
+        patientId: newInpatient.patientId,
+        healthFacilityId: facilityId,
+        medicalDepartmentId: newInpatient.departmentId,
+        bedId: newInpatient.bedId,
+        admittedAt: new Date().toISOString(),
+        notes: newInpatient.notes
+      });
+      fetchAdmissions();
+      setIsModalOpen(false);
+      showToast?.("تم تسجيل دخول المريض بنجاح وحفظه بالخادم!", "success");
+      setNewInpatient({
+        patientId: "",
+        departmentId: "",
+        bedId: "",
+        notes: ""
+      });
+    } catch (err) {
+      console.error("Failed to register admission:", err);
+      showToast?.("فشل تسجيل المريض بالخادم.", "danger");
+    }
   };
 
   return (
@@ -191,7 +222,7 @@ function HospitalInpatients({ showToast }) {
               style={{ paddingRight: "35px", cursor: "pointer", background: "white" }}
             >
               <option value="الأقسام">الأقسام</option>
-              {initialDepartmentsData.map(d => (
+              {dbDepts.map(d => (
                 <option key={d.id} value={d.name}>{d.name}</option>
               ))}
             </select>
@@ -213,7 +244,7 @@ function HospitalInpatients({ showToast }) {
               type="text" 
               placeholder="بحث عن مريض..." 
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               style={{ width: "100%", paddingRight: "40px" }}
             />
             <FaMagnifyingGlass style={{ 
@@ -230,9 +261,9 @@ function HospitalInpatients({ showToast }) {
       {/* Stats Cards */}
       <div className="cards">
         <div className="card">
-          <h3>متوسط الإقامة</h3>
+          <h3>المرضى الحاليين</h3>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>4.2 يوم</p>
+            <p>{totalCount} نزيل</p>
             <span style={{ 
               fontSize: "24px", 
               background: "var(--primary-glow)", 
@@ -241,58 +272,7 @@ function HospitalInpatients({ showToast }) {
               borderRadius: "50%", 
               display: "inline-flex" 
             }}>
-              <FaClock />
-            </span>
-          </div>
-        </div>
-
-        <div className="card">
-          <h3>الغرف الخاصة</h3>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>8 مرضى</p>
-            <span style={{ 
-              fontSize: "24px", 
-              background: "rgba(245, 158, 11, 0.08)", 
-              color: "var(--accent-amber)", 
-              padding: "10px", 
-              borderRadius: "50%", 
-              display: "inline-flex" 
-            }}>
-              <FaStar />
-            </span>
-          </div>
-        </div>
-
-        <div className="card">
-          <h3>الغرف العادية</h3>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>64 مريض</p>
-            <span style={{ 
-              fontSize: "24px", 
-              background: "rgba(16, 185, 129, 0.08)", 
-              color: "var(--accent-emerald)", 
-              padding: "10px", 
-              borderRadius: "50%", 
-              display: "inline-flex" 
-            }}>
-              <FaBed />
-            </span>
-          </div>
-        </div>
-
-        <div className="card">
-          <h3>العناية المركزة</h3>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>12 مريض</p>
-            <span style={{ 
-              fontSize: "24px", 
-              background: "rgba(139, 92, 246, 0.08)", 
-              color: "var(--accent-purple)", 
-              padding: "10px", 
-              borderRadius: "50%", 
-              display: "inline-flex" 
-            }}>
-              <FaHeartPulse />
+              <FaUserGroup />
             </span>
           </div>
         </div>
@@ -301,133 +281,124 @@ function HospitalInpatients({ showToast }) {
       {/* Inpatients Table */}
       <div className="box" style={{ overflow: "visible" }}>
         <h2>قائمة المرضى المقيمين بالأقسام</h2>
-        <div className="table-container">
-          <table style={{ overflow: "visible" }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: "center", width: "60px" }}>#</th>
-                <th style={{ textAlign: "right" }}>اسم المريض</th>
-                <th style={{ textAlign: "center" }}>الرقم الطبي</th>
-                <th style={{ textAlign: "right" }}>القسم</th>
-                <th style={{ textAlign: "right" }}>الطبيب المعالج</th>
-                <th style={{ textAlign: "center" }}>نوع الغرفة</th>
-                <th style={{ textAlign: "center" }}>تاريخ الدخول</th>
-                <th style={{ textAlign: "center" }}>مدة الإقامة</th>
-                <th style={{ textAlign: "center" }}>الحالة</th>
-                <th style={{ textAlign: "center", width: "110px" }}>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInpatients.map((pat, idx) => (
-                <tr key={pat.id}>
-                  <td style={{ textAlign: "center", color: "var(--text-muted)" }}>{idx + 1}</td>
-                  <td style={{ textAlign: "right", fontWeight: "700", color: "var(--text-dark)" }}>{pat.name}</td>
-                  <td style={{ textAlign: "center", fontFamily: "Outfit", color: "var(--text-muted)" }}>{pat.medicalId}</td>
-                  <td style={{ textAlign: "right", fontWeight: "600", color: "var(--primary)" }}>{pat.department}</td>
-                  <td style={{ textAlign: "right", color: "var(--text-dark)" }}>{pat.doctor}</td>
-                  <td style={{ textAlign: "center" }}>
-                    <span className="status" style={{ 
-                      background: pat.roomType === "icu" ? "var(--accent-red-light)" : pat.roomType === "private" ? "var(--accent-amber-light)" : "var(--primary-light)",
-                      color: pat.roomType === "icu" ? "#991b1b" : pat.roomType === "private" ? "#92400e" : "var(--primary)",
-                      fontSize: "11.5px"
-                    }}>
-                      {getRoomTypeArabic(pat.roomType)}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: "center", fontFamily: "Outfit" }}>{pat.admissionDate}</td>
-                  <td style={{ textAlign: "center", color: "var(--text-muted)" }}>{pat.duration}</td>
-                  <td style={{ textAlign: "center" }}>{getStatusBadge(pat.status)}</td>
-                  <td style={{ textAlign: "center", position: "relative" }}>
-                    <button 
-                      className="btn btn-secondary" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveDropdownId(activeDropdownId === pat.id ? null : pat.id);
-                      }}
-                      style={{ padding: "6px 14px", fontWeight: "bold" }}
-                    >
-                      إجراءات <FaChevronDown style={{ fontSize: "8px", marginRight: "4px" }} />
-                    </button>
-                    
-                    {/* Action Dropdown Menu */}
-                    {activeDropdownId === pat.id && (
-                      <>
-                        <div 
-                          style={{ position: "fixed", inset: 0, zIndex: 90 }} 
-                          onClick={() => setActiveDropdownId(null)}
-                        ></div>
-                        <div style={{
-                          position: "absolute",
-                          left: "0",
-                          top: "40px",
-                          width: "200px",
-                          background: "white",
-                          border: "1px solid var(--border-color)",
-                          borderRadius: "var(--radius-md)",
-                          boxShadow: "var(--shadow-lg)",
-                          zIndex: 100,
-                          padding: "5px",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "3px"
-                        }}>
-                          <button onClick={() => handleActionToast("عرض الملف الطبي")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaIdCardClip style={{ color: "var(--secondary)" }} /> عرض الملف الطبي
-                          </button>
-                          
-                          <button onClick={() => handleStatusChange(pat.id, pat.status === "stable" ? "critical" : "stable")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaHeartPulse style={{ color: "var(--accent-amber)" }} /> تغيير الحالة الطبية
-                          </button>
-                          
-                          <button onClick={() => handleActionToast("إضافة وصفة")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaFileMedical style={{ color: "var(--accent-emerald)" }} /> إضافة وصفة علاج
-                          </button>
+        {loading ? (
+          <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
+            <FaSpinner className="spinner" style={{ fontSize: "28px", color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+            <p style={{ marginTop: "12px", fontWeight: "bold" }}>جاري تحميل المرضى المقيمين...</p>
+          </div>
+        ) : error ? (
+          <div style={{ padding: "30px", textAlign: "center", background: "#fef2f2", border: "1.5px solid #fee2e2", borderRadius: "12px", color: "#991b1b", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", margin: "20px 0" }}>
+            <span style={{ fontWeight: "700" }}>فشل تحميل سجل المرضى من الخادم الموحد</span>
+            <button className="btn" onClick={fetchAdmissions} style={{ background: "var(--primary)", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>إعادة المحاولة</button>
+          </div>
+        ) : filteredInpatients.length === 0 ? (
+          <div style={{ padding: "40px", textAlign: "center", border: "1.5px dashed #cbd5e1", borderRadius: "12px", background: "#f8fafc" }}>
+            <span style={{ color: "#64748b", fontWeight: "600", display: "block" }}>لا يوجد مرضى مقيمين حالياً.</span>
+          </div>
+        ) : (
+          <>
+            <div className="table-container">
+              <table style={{ overflow: "visible" }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "center", width: "60px" }}>#</th>
+                    <th style={{ textAlign: "right" }}>اسم المريض</th>
+                    <th style={{ textAlign: "center" }}>الرقم الطبي / المعرف</th>
+                    <th style={{ textAlign: "right" }}>القسم</th>
+                    <th style={{ textAlign: "center" }}>رمز السرير</th>
+                    <th style={{ textAlign: "center" }}>تاريخ الدخول</th>
+                    <th style={{ textAlign: "right" }}>ملاحظات التنويم</th>
+                    <th style={{ textAlign: "center" }}>الحالة</th>
+                    <th style={{ textAlign: "center", width: "110px" }}>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInpatients.map((pat, idx) => (
+                    <tr key={pat.id}>
+                      <td style={{ textAlign: "center", color: "var(--text-muted)" }}>{(page - 1) * pageSize + idx + 1}</td>
+                      <td style={{ textAlign: "right", fontWeight: "700", color: "var(--text-dark)" }}>{pat.name}</td>
+                      <td style={{ textAlign: "center", fontFamily: "Outfit", color: "var(--text-muted)" }}>{pat.medicalId}</td>
+                      <td style={{ textAlign: "right", fontWeight: "600", color: "var(--primary)" }}>{pat.department}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <span className="status" style={{ background: "var(--primary-light)", color: "var(--primary)", fontSize: "11.5px" }}>
+                          {pat.bedNumber}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "center", fontFamily: "Outfit" }}>{pat.admissionDate}</td>
+                      <td style={{ textAlign: "right", color: "var(--text-muted)", fontSize: "12px" }}>{pat.notes || "-"}</td>
+                      <td style={{ textAlign: "center" }}>{getStatusBadge(pat.status)}</td>
+                      <td style={{ textAlign: "center", position: "relative" }}>
+                        <button 
+                          className="btn btn-secondary" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownId(activeDropdownId === pat.id ? null : pat.id);
+                          }}
+                          style={{ padding: "6px 14px", fontWeight: "bold" }}
+                        >
+                          إجراءات <FaChevronDown style={{ fontSize: "8px", marginRight: "4px" }} />
+                        </button>
+                        
+                        {/* Action Dropdown Menu */}
+                        {activeDropdownId === pat.id && (
+                          <>
+                            <div 
+                              style={{ position: "fixed", inset: 0, zIndex: 90 }} 
+                              onClick={() => setActiveDropdownId(null)}
+                            ></div>
+                            <div style={{
+                              position: "absolute",
+                              left: "0",
+                              top: "40px",
+                              width: "200px",
+                              background: "white",
+                              border: "1px solid var(--border-color)",
+                              borderRadius: "var(--radius-md)",
+                              boxShadow: "var(--shadow-lg)",
+                              zIndex: 100,
+                              padding: "5px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "3px"
+                            }}>
+                              <button onClick={() => handleDischarge(pat.id)} style={{ width: "100%", textAlign: "right", padding: "8px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", color: "var(--accent-emerald)", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px", fontWeight: "bold" }} className="btn-secondary">
+                                <FaDoorOpen style={{ color: "var(--accent-emerald)" }} /> تسجيل خروج المريض
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-                          <button onClick={() => handleActionToast("طلب تحليل")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaVial style={{ color: "var(--accent-purple)" }} /> طلب تحليل مخبري
-                          </button>
-
-                          <button onClick={() => handleActionToast("طلب أشعة")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaXRay style={{ color: "var(--secondary)" }} /> طلب أشعة تشخيصية
-                          </button>
-
-                          <button onClick={() => handleActionToast("نقل غرفة")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaRightLeft style={{ color: "rgba(245, 158, 11, 0.8)" }} /> نقل لغرفة أخرى
-                          </button>
-
-                          <button onClick={() => handleActionToast("تحويل قسم")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaHouseLaptop style={{ color: "var(--primary)" }} /> تحويل لقسم آخر
-                          </button>
-
-                          <button onClick={() => handleActionToast("إضافة تقرير")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaFilePdf style={{ color: "var(--text-muted)" }} /> إضافة تقرير طبي
-                          </button>
-
-                          <button onClick={() => handleActionToast("جدولة عملية")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaCalendarCheck style={{ color: "var(--accent-purple)" }} /> جدولة عملية جراحية
-                          </button>
-
-                          <div style={{ borderTop: "1px solid var(--bg-main)", paddingTop: "4px", marginTop: "4px" }}>
-                            <button onClick={() => handleDischarge(pat.id)} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", color: "var(--accent-emerald)", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px", fontWeight: "bold" }} className="btn-secondary">
-                              <FaDoorOpen style={{ color: "var(--accent-emerald)" }} /> تسجيل خروج المريض
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {filteredInpatients.length === 0 && (
-                <tr>
-                  <td colSpan="10" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
-                    ⚠️ لا يوجد مرضى مقيمين مطابقين للبحث.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            {/* Pagination Controls */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", fontSize: "13px", color: "var(--text-muted)", flexWrap: "wrap", gap: "10px" }}>
+              <div>عرض {inpatients.length} من {totalCount} نزيل</div>
+              <div style={{ display: "flex", gap: "5px" }}>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: "6px 12px", fontSize: "12px" }} 
+                  disabled={page <= 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  السابق
+                </button>
+                <button className="btn" style={{ padding: "6px 12px", fontSize: "12px", minWidth: "30px" }}>{page}</button>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: "6px 12px", fontSize: "12px" }} 
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                >
+                  التالي
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Add Inpatient Modal */}
@@ -436,30 +407,23 @@ function HospitalInpatients({ showToast }) {
           <div className="modal-content" style={{ width: "550px" }}>
             <span className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</span>
             <h2 style={{ color: "var(--primary)", marginTop: "0", borderBottom: "2px solid var(--bg-main)", paddingBottom: "15px", fontWeight: "700", fontSize: "18px" }}>
-              ➕ إضافة دخول مريض جديد للأقسام
+              ➕ تسجيل دخول مريض جديد للأقسام
             </h2>
             <form onSubmit={handleAddInpatientSubmit} style={{ marginTop: "20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1.2fr", gap: "15px", marginBottom: "15px" }}>
-                <div>
-                  <label>اسم المريض الكامل <span style={{ color: "var(--accent-red)" }}>*</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="مثال: أحمد محمد علي" 
-                    required
-                    value={newInpatient.name}
-                    onChange={(e) => setNewInpatient({ ...newInpatient, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label>الرقم الطبي للملف <span style={{ color: "var(--accent-red)" }}>*</span></label>
-                  <input 
-                    type="text" 
-                    placeholder="مثال: P1001258" 
-                    required
-                    value={newInpatient.medicalId}
-                    onChange={(e) => setNewInpatient({ ...newInpatient, medicalId: e.target.value })}
-                  />
-                </div>
+              <div style={{ marginBottom: "15px" }}>
+                <label>اسم المريض <span style={{ color: "var(--accent-red)" }}>*</span></label>
+                <select 
+                  required
+                  value={newInpatient.patientId}
+                  onChange={(e) => setNewInpatient({ ...newInpatient, patientId: e.target.value })}
+                  style={{ width: "100%" }}
+                >
+                  <option value="" disabled hidden>اختر المريض</option>
+                  {dbPatients.map(p => (
+                    <option key={p.userId} value={p.userId}>{p.displayName} ({p.email || p.username})</option>
+                  ))}
+                  {dbPatients.length === 0 && <option value="" disabled>لا يوجد مرضى مسجلين بالنظام</option>}
+                </select>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
@@ -467,69 +431,43 @@ function HospitalInpatients({ showToast }) {
                   <label>القسم الموجه إليه <span style={{ color: "var(--accent-red)" }}>*</span></label>
                   <select 
                     required
-                    value={newInpatient.department}
-                    onChange={(e) => setNewInpatient({ ...newInpatient, department: e.target.value })}
+                    value={newInpatient.departmentId}
+                    onChange={(e) => setNewInpatient({ ...newInpatient, departmentId: e.target.value })}
                     style={{ width: "100%" }}
                   >
                     <option value="" disabled hidden>اختر القسم</option>
-                    {initialDepartmentsData.map(d => (
-                      <option key={d.id} value={d.name}>{d.name}</option>
+                    {dbDepts.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label>الطبيب المعالج <span style={{ color: "var(--accent-red)" }}>*</span></label>
+                  <label>السرير المتاح <span style={{ color: "var(--accent-red)" }}>*</span></label>
                   <select 
                     required
-                    value={newInpatient.doctor}
-                    onChange={(e) => setNewInpatient({ ...newInpatient, doctor: e.target.value })}
+                    value={newInpatient.bedId}
+                    onChange={(e) => setNewInpatient({ ...newInpatient, bedId: e.target.value })}
                     style={{ width: "100%" }}
                   >
-                    <option value="" disabled hidden>اختر الطبيب</option>
-                    {initialDoctorsData.map(doc => (
-                      <option key={doc.id} value={doc.name}>{doc.name}</option>
+                    <option value="" disabled hidden>اختر السرير</option>
+                    {dbBeds.map(b => (
+                      <option key={b.bedId || b.id} value={b.bedId || b.id}>{b.bedNumber || b.code || "سرير"}</option>
                     ))}
+                    {dbBeds.length === 0 && <option value="" disabled>لا توجد أسرة شاغرة حالياً</option>}
                   </select>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-                <div>
-                  <label>نوع الغرفة / السرير</label>
-                  <select 
-                    value={newInpatient.roomType}
-                    onChange={(e) => setNewInpatient({ ...newInpatient, roomType: e.target.value })}
-                    style={{ width: "100%" }}
-                  >
-                    <option value="normal">غرفة عادية</option>
-                    <option value="private">غرفة خاصة</option>
-                    <option value="icu">العناية المركزة</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label>تاريخ الدخول</label>
-                  <input 
-                    type="date"
-                    required
-                    value={newInpatient.admissionDate}
-                    onChange={(e) => setNewInpatient({ ...newInpatient, admissionDate: e.target.value })}
-                  />
                 </div>
               </div>
 
               <div style={{ marginBottom: "25px" }}>
-                <label>الحالة التشخيصية الأولية</label>
-                <select 
-                  value={newInpatient.status}
-                  onChange={(e) => setNewInpatient({ ...newInpatient, status: e.target.value })}
-                  style={{ width: "100%" }}
-                >
-                  <option value="stable">مستقر</option>
-                  <option value="observation">تحت الملاحظة</option>
-                  <option value="critical">حالة حرجة</option>
-                </select>
+                <label>ملاحظات الدخول</label>
+                <textarea 
+                  rows="3" 
+                  placeholder="ملاحظات تشخيصية أولية أو تعليمات..."
+                  value={newInpatient.notes}
+                  onChange={(e) => setNewInpatient({ ...newInpatient, notes: e.target.value })}
+                  style={{ width: "100%", fontFamily: "inherit" }}
+                />
               </div>
 
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>

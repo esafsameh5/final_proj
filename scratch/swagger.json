@@ -1,0 +1,6464 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Digital Health REST API",
+    "description": "National healthcare — hospitals, patients, appointments, encounters, prescriptions, lab, radiology, insurance and audit management API.",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/audit": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/select-facility": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectFacilityDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectFacilityDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectFacilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/select-role": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectRoleDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectRoleDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout-all": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/smart-card/generate": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CardTokenType"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/smart-card/redeem": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-encounters": {
+      "post": {
+        "tags": [
+          "Encounters"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EncounterCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EncounterCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EncounterCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Encounters"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "patientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "doctorId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-encounters/{id}/close": {
+      "patch": {
+        "tags": [
+          "Encounters"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "diagnosisSummary",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "treatmentSummary",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-encounters/{id}/vital-signs": {
+      "post": {
+        "tags": [
+          "Encounters"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VitalSignsDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VitalSignsDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/VitalSignsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-encounters/{id}/diagnoses": {
+      "post": {
+        "tags": [
+          "Encounters"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities": {
+      "post": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthFacilityCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthFacilityCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthFacilityCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{id}": {
+      "put": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthFacilityUpdateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthFacilityUpdateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/HealthFacilityUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/analytics": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/departments": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/departments/{departmentId}": {
+      "put": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentUpdateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentUpdateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/admissions": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AdmissionStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/rooms": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/beds": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BedStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/operations": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/FollowUpStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/reports/performance": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/reports/occupancy": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/reports/departments": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/reports/operations": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facilityId}/reports/patients": {
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/departments": {
+      "post": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/wards": {
+      "post": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WardCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WardCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/WardCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/rooms": {
+      "post": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/beds": {
+      "post": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BedCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/beds/{bedId}/status": {
+      "patch": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "bedId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BedStatus"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/beds/{id}/status": {
+      "patch": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BedStatus"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/departments/{departmentId}/services": {
+      "post": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentServiceCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentServiceCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentServiceCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/services/{serviceId}/status": {
+      "patch": {
+        "tags": [
+          "Facilities"
+        ],
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api-status": {
+      "get": {
+        "tags": [
+          "FinalProjectV2"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "FinalProjectV2"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/insurance/providers": {
+      "post": {
+        "tags": [
+          "Insurance"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsuranceProviderCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsuranceProviderCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsuranceProviderCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/insurance/policies": {
+      "post": {
+        "tags": [
+          "Insurance"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsurancePolicyCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsurancePolicyCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsurancePolicyCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/insurance/policies/{id}/status": {
+      "patch": {
+        "tags": [
+          "Insurance"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/lookups/icd10": {
+      "post": {
+        "tags": [
+          "Lookups"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Icd10CodeDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Icd10CodeDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Icd10CodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Lookups"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/lookups/medications": {
+      "post": {
+        "tags": [
+          "Lookups"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicationCatalogDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicationCatalogDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicationCatalogDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Lookups"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-records": {
+      "post": {
+        "tags": [
+          "MedicalRecords"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMedicalRecordDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMedicalRecordDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMedicalRecordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-records/{patientId}": {
+      "get": {
+        "tags": [
+          "MedicalRecords"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-records/{patientId}/diseases": {
+      "post": {
+        "tags": [
+          "MedicalRecords"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiseaseDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiseaseDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiseaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-records/{patientId}/allergies": {
+      "post": {
+        "tags": [
+          "MedicalRecords"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllergyDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllergyDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllergyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-records/{patientId}/medications": {
+      "post": {
+        "tags": [
+          "MedicalRecords"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurrentMedicationDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurrentMedicationDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurrentMedicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-records/{patientId}/vaccinations": {
+      "post": {
+        "tags": [
+          "MedicalRecords"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaccinationDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaccinationDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaccinationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/medical-records/{patientId}/surgery-history": {
+      "post": {
+        "tags": [
+          "MedicalRecords"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SurgeryHistoryDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SurgeryHistoryDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SurgeryHistoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/ministry/facilities/{id}/approve": {
+      "put": {
+        "tags": [
+          "Ministry"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityApprovalDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityApprovalDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityApprovalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/ministry/facilities/{id}/suspend": {
+      "put": {
+        "tags": [
+          "Ministry"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/ministry/disputes": {
+      "post": {
+        "tags": [
+          "Ministry"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessDisputeCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessDisputeCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessDisputeCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Ministry"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DisputeStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/ministry/disputes/{id}/review": {
+      "patch": {
+        "tags": [
+          "Ministry"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessDisputeReviewDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessDisputeReviewDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessDisputeReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/ministry/stats": {
+      "get": {
+        "tags": [
+          "Ministry"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/my": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/operations/admissions": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HospitalAdmissionCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HospitalAdmissionCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/HospitalAdmissionCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/operations/admissions/{id}/discharge": {
+      "patch": {
+        "tags": [
+          "Operations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/operations/shifts": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffShiftCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffShiftCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffShiftCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/operations/follow-ups": {
+      "post": {
+        "tags": [
+          "Operations"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientFollowUpCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientFollowUpCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientFollowUpCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/operations/follow-ups/{id}/complete": {
+      "patch": {
+        "tags": [
+          "Operations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/permissions/grant": {
+      "post": {
+        "tags": [
+          "Permissions"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantPermissionDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantPermissionDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantPermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/permissions/revoke": {
+      "post": {
+        "tags": [
+          "Permissions"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokePermissionDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokePermissionDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokePermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/permissions/my": {
+      "get": {
+        "tags": [
+          "Permissions"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/permissions/check": {
+      "get": {
+        "tags": [
+          "Permissions"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "permission",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PermissionType"
+            }
+          },
+          {
+            "name": "facilityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/prescriptions": {
+      "post": {
+        "tags": [
+          "Prescriptions"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescriptionCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/prescriptions/patient/{patientId}": {
+      "get": {
+        "tags": [
+          "Prescriptions"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/prescriptions/{id}/status": {
+      "patch": {
+        "tags": [
+          "Prescriptions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PrescriptionStatus"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/prescriptions/reminders": {
+      "post": {
+        "tags": [
+          "Prescriptions"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicationReminderCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicationReminderCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicationReminderCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/medical": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicalReportCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicalReportCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedicalReportCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/medical/patient/{patientId}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/lab/request": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabRequestCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabRequestCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabRequestCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/lab/result": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabResultCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabResultCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabResultCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/radiology/request": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadiologyRequestCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadiologyRequestCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadiologyRequestCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/radiology/result": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadiologyResultCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadiologyResultCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadiologyResultCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/files": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileAssetCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileAssetCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileAssetCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/register": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "Search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserRole"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/change-password": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{id}/status": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserStatus"
+            }
+          },
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/facility-roles/assign": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignFacilityRoleDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignFacilityRoleDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignFacilityRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/facility-roles/suspend": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendFacilityRoleDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendFacilityRoleDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendFacilityRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/facility-roles/reinstate": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReinstateFacilityRoleDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReinstateFacilityRoleDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReinstateFacilityRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/facility-roles/terminate": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminateFacilityRoleDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminateFacilityRoleDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminateFacilityRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{id}/facility-roles": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/global-roles/assign": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignGlobalRoleDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignGlobalRoleDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignGlobalRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/global-roles/revoke": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeGlobalRoleDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeGlobalRoleDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeGlobalRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/department-heads/assign": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDepartmentHeadDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDepartmentHeadDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDepartmentHeadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/department-heads/remove": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-TOKEN",
+            "in": "header",
+            "description": "Required. Value returned as 'csrfToken' from the final step of login (/auth/select-role or /auth/login when no facility/role selection is needed) or /auth/refresh. Must be re-sent on every state-changing request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveDepartmentHeadDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveDepartmentHeadDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveDepartmentHeadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/department-heads/facility/{facilityId}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/departments/{departmentId}/staff": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccessDisputeCreateDto": {
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccessDisputeReviewDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/DisputeStatus"
+          },
+          "resolution": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdmissionStatus": {
+        "enum": [
+          "Active",
+          "Discharged",
+          "Transferred",
+          "Cancelled"
+        ],
+        "type": "string"
+      },
+      "AllergyDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "reaction": {
+            "maxLength": 700,
+            "type": "string",
+            "nullable": true
+          },
+          "severity": {
+            "$ref": "#/components/schemas/DiseaseSeverity"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AssignDepartmentHeadDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AssignFacilityRoleDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "medicalDepartmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AssignGlobalRoleDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleToAdd": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BedCreateDto": {
+        "required": [
+          "roomId"
+        ],
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BedStatus": {
+        "enum": [
+          "Available",
+          "Occupied",
+          "Reserved",
+          "Cleaning",
+          "Maintenance",
+          "OutOfService"
+        ],
+        "type": "string"
+      },
+      "CardTokenType": {
+        "enum": [
+          "QR",
+          "NFC"
+        ],
+        "type": "string"
+      },
+      "ChangePasswordDto": {
+        "required": [
+          "newPassword",
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "newPassword": {
+            "maxLength": 100,
+            "minLength": 8,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateMedicalRecordDto": {
+        "required": [
+          "patientId"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "governorate": {
+            "$ref": "#/components/schemas/EgyptianGovernorate"
+          },
+          "bloodType": {
+            "maxLength": 20,
+            "type": "string",
+            "nullable": true
+          },
+          "emergencySummary": {
+            "maxLength": 3000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateUserDto": {
+        "required": [
+          "nationalNumber",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "$ref": "#/components/schemas/FullNameDto"
+          },
+          "nationalNumber": {
+            "maxLength": 14,
+            "minLength": 14,
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 60,
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "maxLength": 255,
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "password": {
+            "maxLength": 100,
+            "minLength": 8,
+            "type": "string"
+          },
+          "roles": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mainHealthFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "address": {
+            "$ref": "#/components/schemas/LocationDto"
+          },
+          "phoneNumbers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhoneNumberDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CurrentMedicationDto": {
+        "required": [
+          "medicationCatalogId"
+        ],
+        "type": "object",
+        "properties": {
+          "medicationCatalogId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dose": {
+            "maxLength": 120,
+            "type": "string",
+            "nullable": true
+          },
+          "frequency": {
+            "maxLength": 120,
+            "type": "string",
+            "nullable": true
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "stoppedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "notes": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DepartmentCreateDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 150,
+            "minLength": 1,
+            "type": "string"
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/MedicalSpecialty"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DepartmentServiceCreateDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DepartmentUpdateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/MedicalSpecialty"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DiagnosisDto": {
+        "required": [
+          "authorDoctorId",
+          "icd10CodeId",
+          "medicalEncounterId",
+          "patientId"
+        ],
+        "type": "object",
+        "properties": {
+          "medicalEncounterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorDoctorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "icd10CodeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "specialty": {
+            "$ref": "#/components/schemas/MedicalSpecialty"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/DiseaseSeverity"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "notes": {
+            "maxLength": 3000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DiseaseDto": {
+        "required": [
+          "icd10CodeId"
+        ],
+        "type": "object",
+        "properties": {
+          "icd10CodeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/DiseaseSeverity"
+          },
+          "isChronic": {
+            "type": "boolean"
+          },
+          "isCritical": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DiseaseStatus"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "diagnosedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DiseaseSeverity": {
+        "enum": [
+          "Low",
+          "Medium",
+          "High",
+          "Critical"
+        ],
+        "type": "string"
+      },
+      "DiseaseStatus": {
+        "enum": [
+          "Active",
+          "UnderTreatment",
+          "Recovered",
+          "Inactive"
+        ],
+        "type": "string"
+      },
+      "DisputeStatus": {
+        "enum": [
+          "Open",
+          "UnderReview",
+          "Resolved",
+          "Rejected"
+        ],
+        "type": "string"
+      },
+      "EgyptianGovernorate": {
+        "enum": [
+          "Cairo",
+          "Giza",
+          "Alexandria",
+          "Qalyubia",
+          "Sharqia",
+          "Dakahlia",
+          "Beheira",
+          "Gharbia",
+          "Monufia",
+          "KafrElSheikh",
+          "Damietta",
+          "PortSaid",
+          "Ismailia",
+          "Suez",
+          "Fayoum",
+          "BeniSuef",
+          "Minya",
+          "Assiut",
+          "Sohag",
+          "Qena",
+          "Luxor",
+          "Aswan",
+          "RedSea",
+          "NewValley",
+          "Matrouh",
+          "NorthSinai",
+          "SouthSinai"
+        ],
+        "type": "string"
+      },
+      "EgyptianGovernorateRegion": {
+        "enum": [
+          "CairoCentral",
+          "CairoEast",
+          "CairoWest",
+          "CairoNorth",
+          "CairoSouth",
+          "GizaCentral",
+          "GizaNorth",
+          "GizaSouth",
+          "GizaOctoberAndZayed",
+          "AlexandriaEast",
+          "AlexandriaCentral",
+          "AlexandriaWest",
+          "BorgElArab",
+          "QalyubiaSouth",
+          "QalyubiaCentral",
+          "QalyubiaNorth",
+          "SharqiaNorth",
+          "SharqiaCentral",
+          "SharqiaSouth",
+          "DakahliaNorth",
+          "DakahliaCentral",
+          "DakahliaSouth",
+          "BeheiraNorth",
+          "BeheiraCentral",
+          "BeheiraSouth",
+          "GharbiaNorth",
+          "GharbiaCentral",
+          "GharbiaSouth",
+          "MonufiaNorth",
+          "MonufiaCentral",
+          "MonufiaSouth",
+          "KafrElSheikhNorth",
+          "KafrElSheikhCentral",
+          "KafrElSheikhSouth",
+          "Damietta",
+          "PortSaid",
+          "Ismailia",
+          "Suez",
+          "Fayoum",
+          "BeniSuef",
+          "MinyaNorth",
+          "MinyaCentral",
+          "MinyaSouth",
+          "AssiutNorth",
+          "AssiutCentral",
+          "AssiutSouth",
+          "SohagNorth",
+          "SohagCentral",
+          "SohagSouth",
+          "QenaNorth",
+          "QenaCentral",
+          "QenaSouth",
+          "Luxor",
+          "AswanNorth",
+          "AswanCentral",
+          "AswanSouth",
+          "RedSeaNorth",
+          "RedSeaCentral",
+          "RedSeaSouth",
+          "NewValleyNorth",
+          "NewValleyCentral",
+          "NewValleySouth",
+          "MatrouhEast",
+          "MatrouhCentral",
+          "MatrouhWest",
+          "NorthSinai",
+          "SouthSinai"
+        ],
+        "type": "string"
+      },
+      "EncounterCreateDto": {
+        "required": [
+          "patientId"
+        ],
+        "type": "object",
+        "properties": {
+          "appointmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctorId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "medicalDepartmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/EncounterType"
+          },
+          "mainComplaint": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          },
+          "diagnosisSummary": {
+            "maxLength": 3000,
+            "type": "string",
+            "nullable": true
+          },
+          "treatmentSummary": {
+            "maxLength": 3000,
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          },
+          "followUpDoctorId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "followUpContactInfo": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EncounterType": {
+        "enum": [
+          "Examination",
+          "Emergency",
+          "Admission",
+          "FollowUp",
+          "Surgery",
+          "ICU",
+          "PharmacyDispense",
+          "LabTest",
+          "Radiology"
+        ],
+        "type": "string"
+      },
+      "FacilityApprovalDto": {
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "reviewerNotes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FileAssetCreateDto": {
+        "required": [
+          "originalName",
+          "storageKey",
+          "uploadedByUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "uploadedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "medicalReportId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "originalName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "storageKey": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "mimeType": {
+            "maxLength": 120,
+            "type": "string",
+            "nullable": true
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sha256": {
+            "maxLength": 128,
+            "type": "string",
+            "nullable": true
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/FilePurpose"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FilePurpose": {
+        "enum": [
+          "MedicalReport",
+          "LabResult",
+          "RadiologyResult",
+          "NationalId",
+          "Insurance",
+          "Consent",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "FollowUpStatus": {
+        "enum": [
+          "Pending",
+          "Done",
+          "Missed",
+          "Cancelled"
+        ],
+        "type": "string"
+      },
+      "FollowUpType": {
+        "enum": [
+          "DoctorVisit",
+          "NurseCheck",
+          "MedicationReminder",
+          "LabTest",
+          "Radiology",
+          "SurgeryPreparation",
+          "PharmacyConsultation",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "FullNameDto": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "middleName": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Gender": {
+        "enum": [
+          "Unknown",
+          "Male",
+          "Female"
+        ],
+        "type": "string"
+      },
+      "GrantPermissionDto": {
+        "required": [
+          "permission",
+          "targetUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "permission": {
+            "$ref": "#/components/schemas/PermissionType"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "medicalDepartmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "HealthFacilityCreateDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/HealthFacilityType"
+          },
+          "governorate": {
+            "$ref": "#/components/schemas/EgyptianGovernorate"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationDto"
+          },
+          "phone": {
+            "maxLength": 30,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "HealthFacilityType": {
+        "enum": [
+          "Hospital",
+          "Clinic",
+          "Pharmacy",
+          "Laboratory",
+          "RadiologyCenter",
+          "MinistryUnit",
+          "AmbulanceUnit",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "HealthFacilityUpdateDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/HealthFacilityType"
+          },
+          "governorate": {
+            "$ref": "#/components/schemas/EgyptianGovernorate"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationDto"
+          },
+          "phone": {
+            "maxLength": 30,
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HospitalAdmissionCreateDto": {
+        "required": [
+          "patientId"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "medicalDepartmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "bedId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "admittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Icd10CodeDto": {
+        "required": [
+          "code",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          "nameEn": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "nameAr": {
+            "maxLength": 300,
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsuranceCoverageLevel": {
+        "enum": [
+          "Basic",
+          "Standard",
+          "Premium",
+          "Full"
+        ],
+        "type": "string"
+      },
+      "InsurancePolicyCreateDto": {
+        "required": [
+          "insuranceProviderId",
+          "patientId",
+          "policyNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "insuranceProviderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "policyNumber": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "coverageLevel": {
+            "$ref": "#/components/schemas/InsuranceCoverageLevel"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "notes": {
+            "maxLength": 1500,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsuranceProviderCreateDto": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 80,
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "maxLength": 30,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LabRequestCreateDto": {
+        "required": [
+          "medicalEncounterId",
+          "patientId",
+          "requestedByUserId",
+          "testName"
+        ],
+        "type": "object",
+        "properties": {
+          "medicalEncounterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "testName": {
+            "maxLength": 250,
+            "minLength": 1,
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 1500,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LabResultCreateDto": {
+        "required": [
+          "labRequestId"
+        ],
+        "type": "object",
+        "properties": {
+          "labRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resultText": {
+            "maxLength": 10000,
+            "type": "string",
+            "nullable": true
+          },
+          "normalRange": {
+            "maxLength": 300,
+            "type": "string",
+            "nullable": true
+          },
+          "performedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "fileAssetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocationDto": {
+        "type": "object",
+        "properties": {
+          "locationType": {
+            "$ref": "#/components/schemas/LocationType"
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "governorate": {
+            "$ref": "#/components/schemas/EgyptianGovernorate"
+          },
+          "region": {
+            "$ref": "#/components/schemas/EgyptianGovernorateRegion"
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "district": {
+            "type": "string",
+            "nullable": true
+          },
+          "street": {
+            "type": "string",
+            "nullable": true
+          },
+          "buildingNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "floor": {
+            "type": "string",
+            "nullable": true
+          },
+          "apartmentNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "landmark": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressDescription": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocationType": {
+        "enum": [
+          "Residence",
+          "Job",
+          "Hospital",
+          "Clinic",
+          "Pharmacy",
+          "Laboratory",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MedicalReportCreateDto": {
+        "required": [
+          "createdByUserId",
+          "patientId",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "medicalEncounterId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportType": {
+            "$ref": "#/components/schemas/MedicalReportType"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "title": {
+            "maxLength": 250,
+            "minLength": 1,
+            "type": "string"
+          },
+          "content": {
+            "maxLength": 10000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MedicalReportType": {
+        "enum": [
+          "Examination",
+          "Diagnosis",
+          "TreatmentPlan",
+          "Discharge",
+          "Surgery",
+          "LabResult",
+          "Radiology",
+          "NursingNote",
+          "PharmacyNote",
+          "Emergency"
+        ],
+        "type": "string"
+      },
+      "MedicalSpecialty": {
+        "enum": [
+          "General",
+          "InternalMedicine",
+          "Cardiology",
+          "Oncology",
+          "Neurology",
+          "Neurosurgery",
+          "Pediatrics",
+          "Orthopedics",
+          "Surgery",
+          "Gynecology",
+          "Emergency",
+          "ICU",
+          "Radiology",
+          "LaboratoryMedicine",
+          "Pharmacy",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "MedicationCatalogDto": {
+        "required": [
+          "tradeName"
+        ],
+        "type": "object",
+        "properties": {
+          "tradeName": {
+            "maxLength": 250,
+            "minLength": 1,
+            "type": "string"
+          },
+          "scientificName": {
+            "maxLength": 250,
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "maxLength": 80,
+            "type": "string",
+            "nullable": true
+          },
+          "strength": {
+            "maxLength": 120,
+            "type": "string",
+            "nullable": true
+          },
+          "form": {
+            "$ref": "#/components/schemas/MedicationForm"
+          },
+          "manufacturer": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "isControlled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MedicationForm": {
+        "enum": [
+          "Unknown",
+          "Tablet",
+          "Capsule",
+          "Syrup",
+          "Injection",
+          "Drops",
+          "Cream",
+          "Inhaler",
+          "Solution",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "MedicationReminderCreateDto": {
+        "required": [
+          "patientId",
+          "prescriptionMedicationId"
+        ],
+        "type": "object",
+        "properties": {
+          "prescriptionMedicationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reminderTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "maxLength": 500,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationChannel": {
+        "enum": [
+          "None",
+          "InApp",
+          "Push",
+          "Sms",
+          "Email",
+          "WhatsApp"
+        ],
+        "type": "string"
+      },
+      "NotificationCreateDto": {
+        "required": [
+          "body",
+          "title",
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NotificationType"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/NotificationPriority"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/NotificationChannel"
+          },
+          "title": {
+            "maxLength": 250,
+            "minLength": 1,
+            "type": "string"
+          },
+          "body": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "relatedEntityType": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "relatedEntityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "metadataJson": {
+            "maxLength": 4000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationPriority": {
+        "enum": [
+          "Low",
+          "Normal",
+          "High",
+          "Critical"
+        ],
+        "type": "string"
+      },
+      "NotificationType": {
+        "enum": [
+          "General",
+          "MedicationReminder",
+          "Appointment",
+          "LabResultReady",
+          "RadiologyResultReady",
+          "FollowUp",
+          "SecurityAlert",
+          "EmergencyAlert",
+          "AdmissionUpdate",
+          "DischargeUpdate",
+          "ShiftReminder",
+          "PrescriptionUpdate",
+          "InsuranceUpdate",
+          "BedStatusUpdate",
+          "RoleAssigned"
+        ],
+        "type": "string"
+      },
+      "PainScale": {
+        "enum": [
+          "None",
+          "Mild",
+          "Moderate",
+          "Severe",
+          "WorstPain"
+        ],
+        "type": "string"
+      },
+      "PatientFollowUpCreateDto": {
+        "required": [
+          "patientId"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "medicalEncounterId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "assignedToUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "followUpDoctorId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "followUpFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "followUpContactMethod": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/FollowUpType"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notes": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionType": {
+        "enum": [
+          "MinistryFullAccess",
+          "ApproveFacility",
+          "NationalReporting",
+          "FacilityFullAccess",
+          "ManageDepartments",
+          "ManageWardsRoomsBeds",
+          "ManageFacilityStaff",
+          "ManageFacilityServices",
+          "ViewFacilityReports",
+          "ManageInsuranceAtFacility",
+          "DepartmentFullAccess",
+          "ManageDepartmentServices",
+          "ManageDepartmentStaff",
+          "ViewDepartmentReports",
+          "CreateAppointment",
+          "ManageAppointment",
+          "CreateEncounter",
+          "CreatePrescription",
+          "CreateMedicalReport",
+          "RequestLab",
+          "RequestRadiology",
+          "RecordVitalSigns",
+          "PharmacyDispense",
+          "ViewPrescriptions",
+          "ViewPatientBasicData",
+          "ViewPatientMedicalRecord",
+          "ViewOwnMedicalRecord",
+          "UploadFile",
+          "EmergencyAccess",
+          "ManageUsers",
+          "ManageHealthFacility"
+        ],
+        "type": "string"
+      },
+      "PhoneNumberDto": {
+        "required": [
+          "number"
+        ],
+        "type": "object",
+        "properties": {
+          "phoneNumberId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string"
+          },
+          "relationType": {
+            "$ref": "#/components/schemas/PhoneOwnerRelationType"
+          },
+          "contactPersonName": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "isPrimary": {
+            "type": "boolean"
+          },
+          "isEmergencyContact": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhoneOwnerRelationType": {
+        "enum": [
+          "Self",
+          "FirstDegree",
+          "SecondDegree",
+          "ThirdDegree",
+          "FourthDegree",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "PrescriptionCreateDto": {
+        "required": [
+          "doctorId",
+          "medicalEncounterId",
+          "patientId"
+        ],
+        "type": "object",
+        "properties": {
+          "medicalEncounterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/PrescriptionVisibility"
+          },
+          "notes": {
+            "maxLength": 1500,
+            "type": "string",
+            "nullable": true
+          },
+          "medications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrescriptionMedicationDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrescriptionMedicationDto": {
+        "required": [
+          "medicationCatalogId"
+        ],
+        "type": "object",
+        "properties": {
+          "medicationCatalogId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dose": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "frequency": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "needsReminder": {
+            "type": "boolean"
+          },
+          "instructions": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrescriptionStatus": {
+        "enum": [
+          "Active",
+          "Completed",
+          "Cancelled",
+          "Stopped"
+        ],
+        "type": "string"
+      },
+      "PrescriptionVisibility": {
+        "enum": [
+          "Public",
+          "Private"
+        ],
+        "type": "string"
+      },
+      "RadiologyRequestCreateDto": {
+        "required": [
+          "medicalEncounterId",
+          "patientId",
+          "requestedByUserId",
+          "studyName"
+        ],
+        "type": "object",
+        "properties": {
+          "medicalEncounterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studyName": {
+            "maxLength": 250,
+            "minLength": 1,
+            "type": "string"
+          },
+          "bodyPart": {
+            "maxLength": 150,
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "maxLength": 1500,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RadiologyResultCreateDto": {
+        "required": [
+          "radiologyRequestId"
+        ],
+        "type": "object",
+        "properties": {
+          "radiologyRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "findings": {
+            "maxLength": 10000,
+            "type": "string",
+            "nullable": true
+          },
+          "impression": {
+            "maxLength": 10000,
+            "type": "string",
+            "nullable": true
+          },
+          "performedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verifiedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "fileAssetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RecordVisibility": {
+        "enum": [
+          "Public",
+          "Private"
+        ],
+        "type": "string"
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "csrfToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "$ref": "#/components/schemas/FullNameDto"
+          },
+          "nationalNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "address": {
+            "$ref": "#/components/schemas/LocationDto"
+          },
+          "phoneNumbers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhoneNumberDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReinstateFacilityRoleDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RemoveDepartmentHeadDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RevokeGlobalRoleDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleToRemove": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RevokePermissionDto": {
+        "required": [
+          "permission",
+          "targetUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "permission": {
+            "$ref": "#/components/schemas/PermissionType"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "medicalDepartmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RoomCreateDto": {
+        "required": [
+          "wardId"
+        ],
+        "type": "object",
+        "properties": {
+          "wardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomType": {
+            "$ref": "#/components/schemas/RoomType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RoomType": {
+        "enum": [
+          "Standard",
+          "Private",
+          "ICU",
+          "Operation",
+          "Emergency",
+          "Isolation",
+          "Other"
+        ],
+        "type": "string"
+      },
+      "SelectFacilityDto": {
+        "type": "object",
+        "properties": {
+          "loginFlowToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SelectRoleDto": {
+        "type": "object",
+        "properties": {
+          "loginFlowToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "selectedRole": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ShiftType": {
+        "enum": [
+          "Morning",
+          "Evening",
+          "Night",
+          "Custom"
+        ],
+        "type": "string"
+      },
+      "StaffShiftCreateDto": {
+        "required": [
+          "staffUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "staffUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "medicalDepartmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "shiftStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shiftEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shiftType": {
+            "$ref": "#/components/schemas/ShiftType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SurgeryHistoryDto": {
+        "required": [
+          "surgeryName"
+        ],
+        "type": "object",
+        "properties": {
+          "surgeryName": {
+            "maxLength": 250,
+            "minLength": 1,
+            "type": "string"
+          },
+          "performedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "hospitalName": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "maxLength": 1500,
+            "type": "string",
+            "nullable": true
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SuspendFacilityRoleDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TerminateFacilityRoleDto": {
+        "type": "object",
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "healthFacilityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "$ref": "#/components/schemas/FullNameDto"
+          },
+          "email": {
+            "maxLength": 255,
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mainHealthFacilityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "address": {
+            "$ref": "#/components/schemas/LocationDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserRole": {
+        "enum": [
+          "None",
+          "Patient",
+          "Employee",
+          "Nurse",
+          "Pharmacist",
+          "Doctor",
+          "DepartmentHead",
+          "HospitalManager",
+          "MinistryOfficer",
+          "Admin",
+          "EmergencyAccess"
+        ],
+        "type": "string"
+      },
+      "UserStatus": {
+        "enum": [
+          "Pending",
+          "Active",
+          "Suspended",
+          "Disabled"
+        ],
+        "type": "string"
+      },
+      "VaccinationDto": {
+        "required": [
+          "vaccineName"
+        ],
+        "type": "object",
+        "properties": {
+          "vaccineName": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "dose": {
+            "maxLength": 80,
+            "type": "string",
+            "nullable": true
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "facilityName": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "VitalSignsDto": {
+        "required": [
+          "medicalEncounterId",
+          "patientId"
+        ],
+        "type": "object",
+        "properties": {
+          "medicalEncounterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "temperatureCelsius": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "heartRate": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "respiratoryRate": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "systolicBloodPressure": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "diastolicBloodPressure": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "oxygenSaturation": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "weightKg": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "heightCm": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "bloodSugarMgDl": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "painScale": {
+            "$ref": "#/components/schemas/PainScale"
+          },
+          "notes": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WardCreateDto": {
+        "required": [
+          "medicalDepartmentId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "medicalDepartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "wardType": {
+            "$ref": "#/components/schemas/WardType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WardType": {
+        "enum": [
+          "General",
+          "Emergency",
+          "ICU",
+          "NICU",
+          "Surgery",
+          "Maternity",
+          "Isolation",
+          "Other"
+        ],
+        "type": "string"
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "Enter JWT Bearer token only.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Audit"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Encounters"
+    },
+    {
+      "name": "Facilities"
+    },
+    {
+      "name": "FinalProjectV2"
+    },
+    {
+      "name": "Insurance"
+    },
+    {
+      "name": "Lookups"
+    },
+    {
+      "name": "MedicalRecords"
+    },
+    {
+      "name": "Ministry"
+    },
+    {
+      "name": "Notifications"
+    },
+    {
+      "name": "Operations"
+    },
+    {
+      "name": "Permissions"
+    },
+    {
+      "name": "Prescriptions"
+    },
+    {
+      "name": "Reports"
+    },
+    {
+      "name": "Users"
+    }
+  ]
+}

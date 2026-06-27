@@ -35,6 +35,9 @@ export default function PasswordInput({
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           className="password-input"
+          lang="en"
+          inputMode="latin"
+          dir="rtl"
         />
 
         <button
@@ -55,6 +58,13 @@ export default function PasswordInput({
 </svg>
           )}
         </button>
+
+        {/* Warning if Arabic characters are typed */}
+        {/[\u0600-\u06FF]/.test(value || "") && (
+          <span className="arabic-warning" dir="rtl">
+            ⚠️ لوحة المفاتيح باللغة العربية. يُفضل التحويل إلى English لإدخال كلمة المرور.
+          </span>
+        )}
       </div>
 
       {isFocused && (

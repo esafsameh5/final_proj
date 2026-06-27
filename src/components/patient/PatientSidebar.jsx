@@ -5,7 +5,9 @@ function PatientSidebar({
   setSidebarOpen,
   patientActivePage,
   setPatientActivePage,
-  onLogout
+  onLogout,
+  hasUnread,
+  unreadCount
 }) {
   return (
     <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
@@ -20,7 +22,31 @@ function PatientSidebar({
       <a className={`nav-link ${patientActivePage === 'prescriptions' ? 'active' : ''}`} onClick={() => { setPatientActivePage('prescriptions'); setSidebarOpen(false); }}>الوصفات الطبية</a>
       <a className={`nav-link ${patientActivePage === 'medicalCard' ? 'active' : ''}`} onClick={() => { setPatientActivePage('medicalCard'); setSidebarOpen(false); }}>كارت الصحة الرقمية</a>
       <a className={`nav-link emergency-nav ${patientActivePage === 'emergency' ? 'active' : ''}`} onClick={() => { setPatientActivePage('emergency'); setSidebarOpen(false); }}>الطوارئ</a>
-      <a className={`nav-link ${patientActivePage === 'notifications' ? 'active' : ''}`} onClick={() => { setPatientActivePage('notifications'); setSidebarOpen(false); }}>الإشعارات</a>
+      <a className={`nav-link ${patientActivePage === 'notifications' ? 'active' : ''}`} onClick={() => { setPatientActivePage('notifications'); setSidebarOpen(false); }}>
+        الإشعارات
+        {unreadCount > 0 ? (
+          <span style={{
+            marginRight: "8px",
+            background: "var(--accent-red)",
+            color: "white",
+            fontSize: "11px",
+            padding: "2px 6px",
+            borderRadius: "10px",
+            fontWeight: "bold"
+          }}>
+            {unreadCount}
+          </span>
+        ) : hasUnread ? (
+          <span style={{
+            marginRight: "8px",
+            background: "var(--accent-red)",
+            borderRadius: "50%",
+            width: "8px",
+            height: "8px",
+            display: "inline-block"
+          }} />
+        ) : null}
+      </a>
       <a className={`nav-link ${patientActivePage === 'settings' ? 'active' : ''}`} onClick={() => { setPatientActivePage('settings'); setSidebarOpen(false); }}>الإعدادات</a>
       <hr style={{ border: "none", borderTop: "1px solid rgba(255, 255, 255, 0.15)", margin: "10px 8px" }} />
       <a className="nav-link logout-link" onClick={onLogout}>تسجيل خروج</a>

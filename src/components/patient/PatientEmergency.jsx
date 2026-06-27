@@ -1,9 +1,29 @@
 import React from "react";
 import HeaderUserBadge from "../common/HeaderUserBadge";
 
+function PatientEmergency({ patients, hasUnread, unreadCount }) {
+  const patientId = sessionStorage.getItem("userId") || "H-2026-001";
+  const patient = patients[patientId] || patients["H-2026-001"];
 
-function PatientEmergency({ patients }) {
-  const patient = patients["H-2026-001"];
+  const hasPenicillinAllergy = () => {
+    if (!patient) return false;
+    
+    // 1. Check structured allergies list first
+    if (Array.isArray(patient.allergiesList) && patient.allergiesList.length > 0) {
+      return patient.allergiesList.some(a => {
+        const name = String(a.name || a.allergyName || "").toLowerCase().trim();
+        return name.includes("penicillin") || name.includes("بنسلين");
+      });
+    }
+    
+    // 2. Fall back to checking the joined allergies string
+    if (patient.allergies && typeof patient.allergies === "string") {
+      const lower = patient.allergies.toLowerCase();
+      return lower.includes("penicillin") || lower.includes("بنسلين");
+    }
+    
+    return false;
+  };
 
   return (
     <div id="patientEmergencyPage" className="page-content active">
@@ -12,7 +32,7 @@ function PatientEmergency({ patients }) {
           <h2>🚨 البيانات الطبية للحالات الطارئة</h2>
           <p>ملخص فوري مخصص للمسعفين وأطباء الطوارئ للتعامل السريع</p>
         </div>
-        <HeaderUserBadge name={patient.name} />
+        <HeaderUserBadge name={patient.name} badgeCount={unreadCount} hasUnread={hasUnread} />
       </div>
 
       <div className="emergency-container">
@@ -34,7 +54,9 @@ function PatientEmergency({ patients }) {
           <div className="emergency-card highlight-red">
             <h3 className="emergency-card-title">🦠 الحساسية الشديدة</h3>
             <div className="emergency-card-value allergy-info">{patient.allergies}</div>
-            <small className="emergency-card-hint">ممنوع تماماً حقن البنسلين أو مشتقاته.</small>
+            {hasPenicillinAllergy() && (
+              <small className="emergency-card-hint">ممنوع تماماً حقن البنسلين أو مشتقاته.</small>
+            )}
           </div>
 
           <div className="emergency-card full-width">
@@ -54,13 +76,21 @@ function PatientEmergency({ patients }) {
               <span className="contact-label"><b>🏥 رقم طوارئ الصحة:</b></span>
               <span className="contact-value primary-text">137</span>
             </div>
-            <div className="contact-item full-width personal-contact">
-              <span className="contact-label"><b>👤 جهة الاتصال الشخصية (الزوجة):</b></span>
-              <span className="contact-value name-phone">
-                سارة أحمد 
-                <span dir="ltr" className="phone-number">(+20 111 222 3333)</span>
-              </span>
-            </div>
+            {patient.emergencyContacts && patient.emergencyContacts.length > 0 ? (
+              patient.emergencyContacts.map((contact, idx) => (
+                <div key={idx} className="contact-item full-width personal-contact">
+                  <span className="contact-label"><b>👤 {contact.relation || "جهة اتصال"}:</b></span>
+                  <span className="contact-value name-phone">
+                    {contact.name} 
+                    {contact.phone && <span dir="ltr" className="phone-number"> ({contact.phone})</span>}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="contact-item full-width personal-contact" style={{ textAlign: "center", color: "var(--text-muted)", padding: "10px 0" }}>
+                لا توجد جهات اتصال للطوارئ مسجلة.
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PasswordInput from "../components/PasswordInput";
+import api from "../utils/api";
+import { storeTokens, clearSession } from "../utils/api";
+
 
 const initialFormState = {
   username: "",
@@ -57,10 +60,13 @@ const getSavedFormState = () => {
   }
 };
 
+import LoginLoadingOverlay from "../components/common/LoginLoadingOverlay";
+
 export default function Login({ showToast }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(getSavedFormState);
   const [errors, setErrors] = useState({});
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
     if (!formData.rememberMe) {
@@ -76,7 +82,7 @@ export default function Login({ showToast }) {
         rememberMe: formData.rememberMe,
       }),
     );
-  }, [formData.accountType, formData.rememberMe, formData.username]);
+  }, [formData.rememberMe, formData.username, formData.accountType]);
 
   const handleChange = ({ target }) => {
     const { name, type, checked, value } = target;
@@ -122,8 +128,85 @@ export default function Login({ showToast }) {
     });
   };
 
-  const handleLogin = (event) => {
+  /**
+   * Decode a JWT and return its payload claims.
+   */
+  const decodeJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * Determine the frontend route from the JWT active_role claim.
+   * In DEV mode, the accountType select overrides the role.
+   */
+  const resolveTargetPath = (claims) => {
+    if (import.meta.env.DEV) {
+      const map = { patient: "/patient", doctor: "/doctor", hospital: "/hospital", ministry: "/ministry" };
+      return map[formData.accountType] || null;
+    }
+    const role = (
+      claims?.active_role ||
+      claims?.role ||
+      claims?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+      ""
+    ).toLowerCase();
+    if (role === "patient") return "/patient";
+    if (role === "doctor") return "/doctor";
+    if (role === "hospital" || role === "hospitaladmin" || role.includes("hospital")) return "/hospital";
+    if (role === "ministry" || role === "ministryadmin" || role.includes("ministry")) return "/ministry";
+    return null;
+  };
+
+  /**
+   * Persist all auth data returned by the final login step.
+   */
+  const persistAuthData = (data, displayFallback) => {
+    storeTokens({
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      csrfToken: data.csrfToken,
+    });
+    if (data.userId) sessionStorage.setItem("userId", data.userId);
+    sessionStorage.setItem("activeUser", data.displayName || displayFallback);
+
+    // Resolve facilityId: prefer explicit field, then JWT claim
+    const facilityId =
+      data.activeFacilityId ||
+      data.facilityId ||
+      data.healthFacilityId ||
+      (() => {
+        const claims = decodeJwt(data.accessToken);
+        return (
+          claims?.facilityId ||
+          claims?.FacilityId ||
+          claims?.healthFacilityId ||
+          claims?.HealthFacilityId ||
+          claims?.hospitalId ||
+          claims?.HospitalId ||
+          claims?.facility_id ||
+          claims?.hospital_id ||
+          ""
+        );
+      })();
+
+    if (facilityId) sessionStorage.setItem("facilityId", facilityId);
+  };
+
+  const handleLogin = async (event) => {
     event.preventDefault();
+    if (isLoggingIn) return; // Prevent duplicate login requests
     const newErrors = {};
 
     if (!formData.username.trim()) {
@@ -138,7 +221,7 @@ export default function Login({ showToast }) {
       newErrors.password = "كلمة المرور يجب أن تحقق جميع التعليمات المطلوبة.";
     }
 
-    if (!formData.accountType) {
+    if (import.meta.env.DEV && !formData.accountType) {
       newErrors.accountType = "من فضلك اختر نوع الحساب.";
     }
 
@@ -147,13 +230,178 @@ export default function Login({ showToast }) {
       return;
     }
 
-    sessionStorage.setItem("activeUser", formData.username.trim());
-    showToast?.(`تم تسجيل الدخول بنجاح للمستخدم ${formData.username}.`, "success");
-    navigate(formData.accountType === "doctor" ? "/doctor" : formData.accountType === "hospital" ? "/hospital" : "/patient");
+    setIsLoggingIn(true);
+
+    try {
+      // ── Step 1: Login ────────────────────────────────────────────────────
+      const loginRes = await api.post("/api/v1/auth/login", {
+        identifier: formData.username.trim(),
+        password: formData.password,
+      });
+
+      const loginData = loginRes.data;
+      if (!loginData || !loginData.success) {
+        setIsLoggingIn(false);
+        showToast?.(loginData?.message || "حدث خطأ أثناء تسجيل الدخول.", "danger");
+        return;
+      }
+
+      let currentData = loginData.data;
+
+      // ── Step 2 (optional): Select Facility ──────────────────────────────
+      // The backend returns a loginFlowToken when facility selection is required.
+      if (currentData.loginFlowToken && !currentData.accessToken) {
+        // Determine facilityId to submit:
+        // Use the first/only facility returned by the backend if available.
+        const facilities = currentData.facilities || [];
+        let facilityId = currentData.facilityId || currentData.healthFacilityId || "";
+        if (!facilityId && facilities.length === 1) {
+          facilityId =
+            facilities[0].id ||
+            facilities[0].healthFacilityId ||
+            facilities[0].facilityId ||
+            "";
+        }
+
+        if (!facilityId) {
+          // Cannot auto-select — surface this to the user
+          setIsLoggingIn(false);
+          showToast?.("يرجى اختيار المنشأة الصحية للمتابعة.", "warning");
+          return;
+        }
+
+        const facRes = await api.post("/api/v1/auth/select-facility", {
+          loginFlowToken: currentData.loginFlowToken,
+          healthFacilityId: facilityId,
+        });
+
+        if (!facRes.data || !facRes.data.success) {
+          setIsLoggingIn(false);
+          showToast?.(facRes.data?.message || "فشل في اختيار المنشأة الصحية.", "danger");
+          return;
+        }
+        currentData = facRes.data.data;
+      }
+
+      // ── Step 3 (optional): Select Role ──────────────────────────────────
+      // The backend returns a loginFlowToken (with no accessToken) when role selection is required.
+      if (currentData.loginFlowToken && !currentData.accessToken) {
+        const roles = currentData.availableRoles || currentData.roles || [];
+        let selectedRole = currentData.selectedRole || "";
+
+        if (!selectedRole && roles.length === 1) {
+          selectedRole = roles[0];
+        }
+
+        if (!selectedRole) {
+          // In DEV, derive from accountType dropdown
+          if (import.meta.env.DEV) {
+            const devRoleMap = { hospital: "HospitalAdmin", doctor: "Doctor", patient: "Patient", ministry: "MinistryAdmin" };
+            selectedRole = devRoleMap[formData.accountType] || "";
+          }
+        }
+
+        if (!selectedRole) {
+          setIsLoggingIn(false);
+          showToast?.("يرجى اختيار الدور للمتابعة.", "warning");
+          return;
+        }
+
+        const roleRes = await api.post("/api/v1/auth/select-role", {
+          loginFlowToken: currentData.loginFlowToken,
+          selectedRole,
+        });
+
+        if (!roleRes.data || !roleRes.data.success) {
+          setIsLoggingIn(false);
+          showToast?.(roleRes.data?.message || "فشل في اختيار الدور.", "danger");
+          return;
+        }
+        currentData = roleRes.data.data;
+      }
+
+      // ── Step 4: Validate final token ─────────────────────────────────────
+      if (!currentData.accessToken) {
+        setIsLoggingIn(false);
+        showToast?.("فشل في استكمال تسجيل الدخول. يرجى المحاولة مرة أخرى.", "danger");
+        return;
+      }
+
+      const claims = decodeJwt(currentData.accessToken);
+      if (!claims) {
+        setIsLoggingIn(false);
+        showToast?.("فشل في قراءة بيانات الصلاحيات من الرمز الأمني.", "danger");
+        return;
+      }
+
+      const targetPath = resolveTargetPath(claims);
+      if (!targetPath) {
+        setIsLoggingIn(false);
+        showToast?.("نوع الحساب غير مصرح به أو غير معروف.", "danger");
+        return;
+      }
+
+      persistAuthData(currentData, formData.username.trim());
+      showToast?.(`تم تسجيل الدخول بنجاح للمستخدم ${currentData.displayName || formData.username.trim()}.`, "success");
+
+      // Fade out smoothly: keep overlay visible and delay navigation briefly
+      setTimeout(() => {
+        setIsLoggingIn(false);
+        navigate(targetPath);
+      }, 400);
+    } catch (error) {
+      console.error("Login error:", error);
+      const errMsg = error.response?.data?.message || "فشل الاتصال بالخادم. يرجى التحقق من بيانات الدخول.";
+      setIsLoggingIn(false);
+      showToast?.(errMsg, "danger");
+    }
   };
 
-  const handleSmartCard = () => {
-    showToast?.("سيتم إضافة خاصية الدخول بكارت الصحة الرقمية قريباً.", "info");
+  const handleSmartCard = async () => {
+    // Smart card redeem: the NFC/QR reader delivers a token via query param or input.
+    // Here we prompt for the token (in production this would come from hardware).
+    const token = window.prompt("أدخل رمز كارت الصحة الرقمية (NFC / QR):");
+    if (!token || !token.trim()) return;
+
+    setIsLoggingIn(true);
+    try {
+      const res = await api.get("/api/v1/auth/smart-card/redeem", {
+        params: { token: token.trim() },
+      });
+
+      const resData = res.data;
+      if (!resData || !resData.success) {
+        setIsLoggingIn(false);
+        showToast?.(resData?.message || "فشل في التحقق من الكارت الصحي.", "danger");
+        return;
+      }
+
+      const data = resData.data;
+      if (!data?.accessToken) {
+        setIsLoggingIn(false);
+        showToast?.("لم يتم إرجاع بيانات صحيحة من الخادم.", "danger");
+        return;
+      }
+
+      const claims = decodeJwt(data.accessToken);
+      const targetPath = resolveTargetPath(claims);
+      if (!targetPath) {
+        setIsLoggingIn(false);
+        showToast?.("نوع الحساب غير مصرح به.", "danger");
+        return;
+      }
+
+      persistAuthData(data, data.displayName || "");
+      showToast?.(`تم الدخول بنجاح عبر كارت الصحة الرقمية.`, "success");
+      setTimeout(() => {
+        setIsLoggingIn(false);
+        navigate(targetPath);
+      }, 400);
+    } catch (err) {
+      console.error("Smart card redeem error:", err);
+      setIsLoggingIn(false);
+      showToast?.(err.response?.data?.message || "فشل في التحقق من الكارت الصحي.", "danger");
+    }
   };
 
   const handleForgotPassword = (event) => {
@@ -393,6 +641,7 @@ export default function Login({ showToast }) {
                   placeholder="مثال: أحمد محمد"
                   type="text"
                   value={formData.username}
+                  disabled={isLoggingIn}
                 />
               </div>
               {errors.username && (
@@ -411,6 +660,7 @@ export default function Login({ showToast }) {
                 onChange={handleChange}
                 placeholder="أدخل كلمة المرور"
                 value={formData.password}
+                disabled={isLoggingIn}
               />
               {errors.password && (
                 <p className="mt-1.5 text-xs font-semibold text-red-500">
@@ -419,42 +669,46 @@ export default function Login({ showToast }) {
               )}
             </div>
 
-            <div data-purpose="form-group">
-              <label className="mb-1.5 block pr-1 text-sm font-semibold text-gray-700" htmlFor="accountType">
-                نوع الحساب
-              </label>
-              <div className="relative">
-                <select
-                  className={`account-type-select w-full appearance-none rounded-xl border bg-gray-50 py-2.5 pr-4 pl-10 text-gray-600 outline-none transition-all focus:ring-2 focus:ring-blue-500 ${
-                    errors.accountType ? "border-red-500" : "border-gray-200 focus:border-transparent"
-                  }`}
-                  id="accountType"
-                  name="accountType"
-                  onChange={handleChange}
-                  value={formData.accountType}
-                >
-                  <option value="" disabled hidden>اختر نوع الحساب</option>
-                  <option value="patient">مواطن / مريض</option>
-                  <option value="doctor">طبيب / ممارس</option>
-                  <option value="hospital">مدير المستشفى / الإدارة</option>
-                </select>
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      d="M19 9l-7 7-7-7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                    ></path>
-                  </svg>
-                </span>
+            {import.meta.env.DEV && (
+              <div data-purpose="form-group">
+                <label className="mb-1.5 block pr-1 text-sm font-semibold text-gray-700" htmlFor="accountType">
+                  نوع الحساب
+                </label>
+                <div className="relative">
+                  <select
+                    className={`account-type-select w-full appearance-none rounded-xl border bg-gray-50 py-2.5 pr-4 pl-10 text-gray-600 outline-none transition-all focus:ring-2 focus:ring-blue-500 ${
+                      errors.accountType ? "border-red-500" : "border-gray-200 focus:border-transparent"
+                    }`}
+                    id="accountType"
+                    name="accountType"
+                    onChange={handleChange}
+                    value={formData.accountType}
+                    disabled={isLoggingIn}
+                  >
+                    <option value="" disabled hidden>اختر نوع الحساب</option>
+                    <option value="patient">مواطن / مريض</option>
+                    <option value="doctor">طبيب / ممارس</option>
+                    <option value="hospital">مدير المستشفى / الإدارة</option>
+                    <option value="ministry">مدير الوزارة / الإدارة المركزية</option>
+                  </select>
+                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        d="M19 9l-7 7-7-7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                      ></path>
+                    </svg>
+                  </span>
+                </div>
+                {errors.accountType && (
+                  <p className="mt-1.5 text-xs font-semibold text-red-500">
+                    {errors.accountType}
+                  </p>
+                )}
               </div>
-              {errors.accountType && (
-                <p className="mt-1.5 text-xs font-semibold text-red-500">
-                  {errors.accountType}
-                </p>
-              )}
-            </div>
+            )}
 
             <div className="flex items-center justify-between text-sm">
               <label className="group flex cursor-pointer items-center gap-2">
@@ -465,6 +719,7 @@ export default function Login({ showToast }) {
                   name="rememberMe"
                   onChange={handleRememberMeChange}
                   type="checkbox"
+                  disabled={isLoggingIn}
                 />
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-gray-300 bg-gray-50 text-white transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-checked:border-blue-600 peer-checked:bg-blue-600">
                   {formData.rememberMe && (
@@ -488,14 +743,16 @@ export default function Login({ showToast }) {
                 className="font-medium text-blue-600 hover:underline"
                 onClick={handleForgotPassword}
                 type="button"
+                disabled={isLoggingIn}
               >
                 نسيت كلمة المرور؟
               </button>
             </div>
 
             <button
-              className="flex w-full items-center justify-center space-x-2 space-x-reverse rounded-xl bg-blue-600 py-2.5 font-bold text-white shadow-lg shadow-blue-200 transition-all active:scale-95 hover:bg-blue-700"
+              className="flex w-full items-center justify-center space-x-2 space-x-reverse rounded-xl bg-blue-600 py-2.5 font-bold text-white shadow-lg shadow-blue-200 transition-all active:scale-95 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               type="submit"
+              disabled={isLoggingIn}
             >
               <span>تسجيل الدخول</span>
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -518,9 +775,10 @@ export default function Login({ showToast }) {
             </div>
 
             <button
-              className="group flex w-full items-center justify-center space-x-4 space-x-reverse rounded-xl border-2 border-dashed border-gray-200 p-3 transition-all hover:border-blue-400 hover:bg-blue-50"
+              className="group flex w-full items-center justify-center space-x-4 space-x-reverse rounded-xl border-2 border-dashed border-gray-200 p-3 transition-all hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleSmartCard}
               type="button"
+              disabled={isLoggingIn}
             >
               <div className="flex h-10 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-transform group-hover:scale-105">
                 <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -563,6 +821,7 @@ export default function Login({ showToast }) {
           </div>
         </div>
       </section>
+      <LoginLoadingOverlay isVisible={isLoggingIn} />
     </main>
   );
 }

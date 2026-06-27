@@ -1,6 +1,35 @@
 import React from "react";
 import HeaderUserBadge from "../common/HeaderUserBadge";
 
+const GOVERNORATES = [
+  { id: 1, name: "القاهرة" },
+  { id: 2, name: "الجيزة" },
+  { id: 3, name: "الإسكندرية" },
+  { id: 4, name: "القليوبية" },
+  { id: 5, name: "الشرقية" },
+  { id: 6, name: "الدقهلية" },
+  { id: 7, name: "البحيرة" },
+  { id: 8, name: "الغربية" },
+  { id: 9, name: "المنوفية" },
+  { id: 10, name: "كفر الشيخ" },
+  { id: 11, name: "دمياط" },
+  { id: 12, name: "بورسعيد" },
+  { id: 13, name: "الإسماعيلية" },
+  { id: 14, name: "السويس" },
+  { id: 15, name: "الفيوم" },
+  { id: 16, name: "بني سويف" },
+  { id: 17, name: "المنيا" },
+  { id: 18, name: "أسيوط" },
+  { id: 19, name: "سوهاج" },
+  { id: 20, name: "قنا" },
+  { id: 21, name: "الأقصر" },
+  { id: 22, name: "أسوان" },
+  { id: 23, name: "البحر الأحمر" },
+  { id: 24, name: "الوادي الجديد" },
+  { id: 25, name: "مطروح" },
+  { id: 26, name: "شمال سيناء" },
+  { id: 27, name: "جنوب سيناء" }
+];
 
 function DoctorPatientProfile({
   activePatient,
@@ -15,11 +44,225 @@ function DoctorPatientProfile({
   setActiveSubTab,
   setVisitModalOpen,
   setPrescriptionModalOpen,
-  setReferralModalOpen,
+  setLabRequestModalOpen,
+  setRadiologyRequestModalOpen,
+  setFollowUpModalOpen,
+  setAdmissionModalOpen,
+  setMedicalReportModalOpen,
   setChronicModalOpen,
-  setEditPrescriptionState,
-  handleDeletePrescription
+  setAllergyModalOpen,
+  setMedicationModalOpen,
+  setVaccinationModalOpen,
+  setSurgeryModalOpen,
+  handleDeletePrescription,
+  isReadOnly,
+  startVisit,
+  refreshPatientData,
+  onCreateMedicalRecord,
+  setVitalSignsModalOpen,
+  setAddDiagnosisModalOpen,
+  setCloseEncounterModalOpen
 }) {
+  const [showCreateForm, setShowCreateForm] = React.useState(false);
+  const [formData, setFormData] = React.useState({
+    governorate: "",
+    bloodType: "",
+    emergencySummary: ""
+  });
+  const [formValidationError, setFormValidationError] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.bloodType) {
+      setFormValidationError("يرجى اختيار فصيلة الدم.");
+      return;
+    }
+    if (!formData.governorate) {
+      setFormValidationError("يرجى اختيار المحافظة.");
+      return;
+    }
+    setFormValidationError("");
+    setSubmitting(true);
+    const res = await onCreateMedicalRecord(formData);
+    setSubmitting(false);
+    if (res && res.success) {
+      setShowCreateForm(false);
+      setFormData({
+        governorate: "",
+        bloodType: "",
+        emergencySummary: ""
+      });
+    }
+  };
+
+  // 1. Loading State
+  if (activePatient.medicalRecordState === "loading") {
+    return (
+      <div id="patientsPage" className="page-content active">
+        <div className="topbar">
+          <div>
+            <h2>👤 الملف الطبي للمريض الحالي</h2>
+            <p>السجل الموحد للمواطن - تصفح وتحرير الملف الكامل</p>
+          </div>
+          <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
+        </div>
+        <div className="card" style={{ padding: "80px 40px", textAlign: "center", margin: "20px" }}>
+          <div className="spinner" style={{ margin: "0 auto 20px", width: "50px", height: "50px", border: "5px solid #f3f3f3", borderTop: "5px solid var(--primary)", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+          <p style={{ color: "var(--text-muted)", fontWeight: "600", fontSize: "16px" }}>جاري تحميل الملف الطبي للمريض من السجل الصحي الموحد...</p>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Error States (401, 403, 500, etc.)
+  if (
+    activePatient.medicalRecordState === "unauthorized" ||
+    activePatient.medicalRecordState === "forbidden" ||
+    activePatient.medicalRecordState === "serverError" ||
+    activePatient.medicalRecordState === "validationError" ||
+    activePatient.medicalRecordState === "error"
+  ) {
+    return (
+      <div id="patientsPage" className="page-content active">
+        <div className="topbar">
+          <div>
+            <h2>👤 الملف الطبي للمريض الحالي</h2>
+            <p>السجل الموحد للمواطن - تصفح وتحرير الملف الكامل</p>
+          </div>
+          <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
+        </div>
+        <div style={{ padding: "40px", textAlign: "center", background: "#fef2f2", border: "1.5px solid #fee2e2", borderRadius: "12px", color: "#991b1b", display: "flex", flexDirection: "column", alignItems: "center", gap: "15px", margin: "20px auto", maxWidth: "600px" }}>
+          <span style={{ fontSize: "40px" }}>⚠️</span>
+          <h3 style={{ fontWeight: "700", fontSize: "16px", margin: 0 }}>
+            {activePatient.medicalRecordErrorMessage || "حدث خطأ أثناء تحميل الملف الطبي."}
+          </h3>
+          <p style={{ fontSize: "14px", color: "#7f1d1d", margin: 0 }}>
+            يرجى التحقق من الاتصال بالشبكة أو صلاحيات الدخول وإعادة المحاولة.
+          </p>
+          <button className="btn" onClick={refreshPatientData} style={{ background: "var(--accent-red)", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>
+            إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Empty State (No medical record exists)
+  if (activePatient.medicalRecordState === "empty") {
+    return (
+      <div id="patientsPage" className="page-content active">
+        <div className="topbar">
+          <div>
+            <h2>👤 الملف الطبي للمريض الحالي</h2>
+            <p>السجل الموحد للمواطن - تصفح وتحرير الملف الكامل</p>
+          </div>
+          <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
+        </div>
+
+        {!showCreateForm ? (
+          <div className="card" style={{ padding: "40px", textAlign: "center", maxWidth: "600px", margin: "40px auto", borderRadius: "var(--radius-md)" }}>
+            <div style={{ fontSize: "50px", marginBottom: "15px" }}>📁</div>
+            <h3 style={{ fontSize: "18px", color: "var(--text-dark)", marginBottom: "10px" }}>لا يوجد ملف طبي لهذا المريض.</h3>
+            <p style={{ color: "var(--text-muted)", marginBottom: "25px" }}>المواطن ليس لديه ملف صحي موحد في النظام حالياً. يمكنك إنشاء ملف طبي جديد له الآن.</p>
+            
+            <button 
+              className="btn" 
+              onClick={() => setShowCreateForm(true)}
+              style={{ background: "var(--primary)", color: "white", padding: "12px 24px", fontSize: "15px", borderRadius: "var(--radius-md)", fontWeight: "bold" }}
+            >
+              إنشاء ملف طبي
+            </button>
+          </div>
+        ) : (
+          <div className="card" style={{ maxWidth: "600px", margin: "30px auto", padding: "30px", borderRadius: "var(--radius-md)", borderRight: "5px solid var(--primary)", textAlign: "right" }}>
+            <h3 style={{ marginBottom: "20px", color: "var(--primary)" }}>📂 إنشاء ملف طبي جديد للمريض</h3>
+            
+            {formValidationError && (
+              <div style={{ padding: "10px 15px", background: "#fef2f2", color: "#991b1b", border: "1px solid #fee2e2", borderRadius: "var(--radius-sm)", marginBottom: "15px", fontWeight: "bold", fontSize: "14px" }}>
+                ⚠️ {formValidationError}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "14px" }}>فصيلة الدم <span style={{ color: "red" }}>*</span></label>
+                <select 
+                  value={formData.bloodType}
+                  onChange={(e) => setFormData({...formData, bloodType: e.target.value})}
+                  style={{ width: "100%", padding: "10px", borderRadius: "var(--radius-sm)", border: "1.5px solid var(--border-color)" }}
+                >
+                  <option value="">اختر فصيلة الدم...</option>
+                  <option value="O+">O+</option>
+                  <option value="A+">A+</option>
+                  <option value="B+">B+</option>
+                  <option value="AB+">AB+</option>
+                  <option value="O-">O-</option>
+                  <option value="A-">A-</option>
+                  <option value="B-">B-</option>
+                  <option value="AB-">AB-</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "14px" }}>المحافظة <span style={{ color: "red" }}>*</span></label>
+                <select 
+                  value={formData.governorate}
+                  onChange={(e) => setFormData({...formData, governorate: e.target.value})}
+                  style={{ width: "100%", padding: "10px", borderRadius: "var(--radius-sm)", border: "1.5px solid var(--border-color)" }}
+                >
+                  <option value="">اختر المحافظة...</option>
+                  {GOVERNORATES.map(gov => (
+                    <option key={gov.id} value={gov.id}>{gov.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold", fontSize: "14px" }}>ملخص الحالات الطارئة / الملاحظات الحرجة</label>
+                <textarea 
+                  rows="4"
+                  placeholder="اكتب هنا أي ملاحظات حرجة أو أمراض طارئة للمريض..."
+                  value={formData.emergencySummary}
+                  onChange={(e) => setFormData({...formData, emergencySummary: e.target.value})}
+                  style={{ width: "100%", padding: "10px", borderRadius: "var(--radius-sm)", border: "1.5px solid var(--border-color)", resize: "vertical", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    setFormValidationError("");
+                    setFormData({ governorate: "", bloodType: "", emergencySummary: "" });
+                  }} 
+                  disabled={submitting}
+                  style={{ background: "#e2e8f0", color: "#475569", padding: "10px 20px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer", fontWeight: "bold" }}
+                >
+                  إلغاء
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting}
+                  style={{ background: "var(--primary)", color: "white", padding: "10px 20px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer", fontWeight: "bold" }}
+                >
+                  {submitting ? "جاري الإنشاء..." : "حفظ وإنشاء الملف"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div id="patientsPage" className="page-content active">
       <div className="topbar">
@@ -62,6 +305,71 @@ function DoctorPatientProfile({
           <HeaderUserBadge name={doctorInfo.name} avatar={doctorInfo.avatar} />
         </div>
       </div>
+
+      {isReadOnly && (
+        <div className="medical-alert warning" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 20px", marginBottom: "25px", borderRadius: "var(--radius-md)", flexWrap: "wrap", gap: "15px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "20px" }}>⚠️</span>
+            <div>
+              <b style={{ fontSize: "14.5px" }}>ملف المريض مفتوح في وضع القراءة فقط</b>
+              <p style={{ margin: "4px 0 0 0", fontSize: "13px", opacity: 0.9 }}>
+                لا يمكنك تعديل هذا الملف أو إضافة كشوفات أو وصفات طبية قبل بدء زيارة طبية نشطة للمريض اليوم.
+              </p>
+            </div>
+          </div>
+          <button 
+            className="btn" 
+            onClick={() => setVisitModalOpen(true)}
+            style={{ background: "var(--accent-emerald)", color: "white", padding: "10px 20px", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: "bold" }}
+          >
+            🏥 بدء زيارة جديدة
+          </button>
+        </div>
+      )}
+
+      {!isReadOnly && (
+        <div className="medical-alert success" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 20px", marginBottom: "25px", borderRadius: "var(--radius-md)", flexWrap: "wrap", gap: "15px", background: "var(--primary-light)", border: "1.5px solid var(--primary)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "20px" }}>🩺</span>
+            <div>
+              <b style={{ fontSize: "14.5px", color: "var(--primary)" }}>توجد زيارة طبية نشطة للمريض حالياً (الكشف مفتوح)</b>
+              <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "var(--text-dark)", opacity: 0.9 }}>
+                يمكنك تسجيل المؤشرات الحيوية، إضافة تشخيصات طبية، أو إنهاء الزيارة وقفل الكشف.
+              </p>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <button 
+              className="btn" 
+              onClick={() => setVitalSignsModalOpen(true)}
+              style={{ background: "var(--secondary)", color: "white", padding: "8px 16px", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: "bold", fontSize: "13.5px" }}
+            >
+              📊 تسجيل المؤشرات الحيوية
+            </button>
+            <button 
+              className="btn" 
+              onClick={() => setAddDiagnosisModalOpen(true)}
+              style={{ background: "var(--accent-purple)", color: "white", padding: "8px 16px", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: "bold", fontSize: "13.5px" }}
+            >
+              🔍 إضافة تشخيص (ICD-10)
+            </button>
+            <button 
+              className="btn" 
+              onClick={() => setCloseEncounterModalOpen(true)}
+              style={{ background: "var(--accent-red)", color: "white", padding: "8px 16px", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: "bold", fontSize: "13.5px" }}
+            >
+              🔴 إنهاء وقفل الكشف
+            </button>
+            <button
+              className="btn"
+              onClick={() => setMedicalReportModalOpen(true)}
+              style={{ background: "var(--primary)", color: "white", padding: "8px 16px", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: "bold", fontSize: "13.5px" }}
+            >
+              📝 إنشاء تقرير طبي
+            </button>
+          </div>
+        </div>
+      )}
 
       <div id="smart-alerts-container" style={{ display: activePatient.alerts && activePatient.alerts.length > 0 ? "flex" : "none", flexDirection: "column", gap: "10px", marginBottom: "25px" }}>
         {activePatient.alerts && activePatient.alerts.map((alertItem, idx) => (
@@ -172,7 +480,9 @@ function DoctorPatientProfile({
           <div className="box" style={{ boxShadow: "none", border: "none", padding: "10px 0 0", background: "transparent" }}>
             <div className="box-header">
               <h3 style={{ color: "var(--primary)", margin: "0", fontWeight: "700", fontSize: "16px" }}>الوصفات الطبية الصادرة للمواطن</h3>
-              <button className="btn" onClick={() => setPrescriptionModalOpen(true)}>➕ إضافة وصفة علاجية</button>
+              {!isReadOnly && (
+                <button className="btn" onClick={() => setPrescriptionModalOpen(true)}>➕ إضافة وصفة علاجية</button>
+              )}
             </div>
             <div className="table-container">
               <table>
@@ -204,15 +514,8 @@ function DoctorPatientProfile({
                             </span>
                           </td>
                           <td style={{ textAlign: "center" }}>
-                            {isOwner ? (
+                            {isOwner && !isReadOnly ? (
                               <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-                                <button 
-                                  onClick={() => setEditPrescriptionState({ index: idx, prescription: pr })}
-                                  style={{ background: "transparent", border: "none", color: "var(--primary)", cursor: "pointer", fontSize: "15px" }}
-                                  title="تعديل الوصفة"
-                                >
-                                  ✏️
-                                </button>
                                 <button 
                                   onClick={() => handleDeletePrescription(idx)}
                                   style={{ background: "transparent", border: "none", color: "var(--accent-red)", cursor: "pointer", fontSize: "15px" }}
@@ -241,9 +544,40 @@ function DoctorPatientProfile({
       {activeSubTab === "referrals-tab" && (
         <div id="referrals-tab" className="tab-content active">
           <div className="box" style={{ boxShadow: "none", border: "none", padding: "10px 0 0", background: "transparent" }}>
-            <div className="box-header">
+            <div className="box-header" style={{ flexWrap: "wrap", gap: "10px" }}>
               <h3 style={{ color: "var(--primary)", margin: "0", fontWeight: "700", fontSize: "16px" }}>سجل التحويلات الطبية الصادرة</h3>
-              <button className="btn" onClick={() => setReferralModalOpen(true)}>➕ إنشاء تحويل جديد</button>
+              {!isReadOnly && (
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <button
+                    className="btn"
+                    onClick={() => setLabRequestModalOpen(true)}
+                    style={{ fontSize: "13px", padding: "8px 14px", background: "var(--secondary)" }}
+                  >
+                    🧪 طلب تحليل
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => setRadiologyRequestModalOpen(true)}
+                    style={{ fontSize: "13px", padding: "8px 14px", background: "var(--accent-purple)" }}
+                  >
+                    🩻 طلب أشعة
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => setFollowUpModalOpen(true)}
+                    style={{ fontSize: "13px", padding: "8px 14px", background: "var(--accent-emerald)" }}
+                  >
+                    📅 متابعة طبية
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => setAdmissionModalOpen(true)}
+                    style={{ fontSize: "13px", padding: "8px 14px", background: "var(--accent-amber)" }}
+                  >
+                    🏥 دخول مستشفى
+                  </button>
+                </div>
+              )}
             </div>
             <div className="table-container">
               <table>

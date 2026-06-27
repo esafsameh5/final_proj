@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import HeaderUserBadge from "../../components/common/HeaderUserBadge";
+import api from "../../utils/api";
 
 import { 
   FaBed, 
@@ -7,54 +8,133 @@ import {
   FaXmark, 
   FaHospital, 
   FaDoorClosed, 
-  FaDoorOpen, 
   FaPlus, 
   FaMagnifyingGlass, 
   FaFilter, 
-  FaChevronDown, 
-  FaRegBell,
-  FaCircleInfo,
-  FaWrench,
-  FaRightLeft,
-  FaRegEye,
-  FaUsers,
-  FaFileInvoice,
-  FaTrashCan,
-  FaBedPulse
+  FaCircleInfo, 
+  FaBedPulse,
+  FaSpinner
 } from "react-icons/fa6";
-import { initialRoomsData } from "../../data/hospital/rooms";
-import { initialDepartmentsData } from "../../data/hospital/departments";
-import ConfirmModal from "../../components/common/ConfirmModal";
+
+function mapRoomTypeToArabic(type) {
+  switch (type) {
+    case "Standard": return "غرفة عادية";
+    case "Private": return "غرفة خاصة";
+    case "ICU": return "العناية المركزة";
+    case "Operation": return "غرفة العمليات";
+    case "Emergency": return "الطوارئ";
+    case "Isolation": return "غرفة عزل";
+    default: return type || "أخرى";
+  }
+}
+
+function mapBedStatusToArabic(status) {
+  switch (status) {
+    case "Available": return "متاح شاغر";
+    case "Occupied": return "مشغول";
+    case "Reserved": return "محجوز";
+    case "Cleaning": return "تنظيف";
+    case "Maintenance": return "صيانة";
+    case "OutOfService": return "خارج الخدمة";
+    default: return status || "متاح";
+  }
+}
 
 function HospitalRoomsBeds({ showToast }) {
-  const [rooms, setRooms] = useState(() => {
-    const saved = localStorage.getItem("hospital_rooms");
-    return saved ? JSON.parse(saved) : initialRoomsData;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("hospital_rooms", JSON.stringify(rooms));
-  }, [rooms]);
+  const [rooms, setRooms] = useState([]);
+  const [beds, setBeds] = useState([]);
+  const [dbDepts, setDbDepts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
   const [viewMode, setViewMode] = useState("rooms"); // "rooms" | "beds"
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDept, setSelectedDept] = useState("كل الأقسام");
   const [selectedStatus, setSelectedStatus] = useState("كل الحالات");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
-  const [confirmModal, setConfirmModal] = useState({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: null
-  });
 
   // New Room Form State
   const [newRoom, setNewRoom] = useState({
-    roomNumber: "",
-    department: "",
-    type: "غرفة عادية",
-    bedsCount: 2
+    departmentId: "",
+    type: "Standard"
   });
+
+  const facilityId = sessionStorage.getItem("facilityId") || "f203157f-0975-4bcf-b8c7-48c2fba672bf";
+
+  // Fetch Rooms & Beds & Departments
+  const fetchRoomsAndBeds = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      // 1. Fetch Rooms
+      const roomsRes = await api.get(`/api/v1/facilities/${facilityId}/rooms`, {
+        params: { IncludeInactive: true }
+      });
+      const roomsData = roomsRes.data?.data?.items || roomsRes.data?.data || [];
+      
+      // 2. Fetch Beds
+      const bedsRes = await api.get(`/api/v1/facilities/${facilityId}/beds`, {
+        params: { IncludeInactive: true, PageSize: 100 }
+      });
+      const bedsData = bedsRes.data?.data?.items || bedsRes.data?.data || [];
+
+      // 3. Fetch Departments
+      const deptsRes = await api.get(`/api/v1/facilities/${facilityId}/departments`, {
+        params: { PageSize: 100 }
+      });
+      setDbDepts(deptsRes.data?.data?.items || []);
+
+      // Map beds list
+      const mappedBeds = bedsData.map(b => ({
+        id: b.bedId || b.id || "",
+        roomId: b.roomId || "",
+        bedNumber: b.bedNumber || b.code || "سرير",
+        status: b.status || "Available",
+        patient: b.patientDisplayName || b.patientName || "لا يوجد",
+        roomNumber: b.roomNumber || b.roomCode || "غير محدد",
+        department: b.departmentName || b.medicalDepartmentName || "الجراحة العامة"
+      }));
+      setBeds(mappedBeds);
+
+      // Map rooms list (calculating beds from the beds list)
+      const mappedRooms = roomsData.map(r => {
+        const roomBeds = mappedBeds.filter(b => b.roomId === r.roomId || b.roomId === r.id);
+        const occupied = roomBeds.filter(b => b.status === "Occupied").length;
+        const available = roomBeds.filter(b => b.status === "Available").length;
+        const total = roomBeds.length;
+        const rate = total > 0 ? Math.round((occupied / total) * 100) : 0;
+        
+        let status = "available";
+        if (total > 0 && occupied === total) status = "full";
+        else if (occupied > 0) status = "partial";
+
+        return {
+          id: r.roomId || r.id || "",
+          roomNumber: r.roomNumber || r.code || `غرفة ${r.roomId ? r.roomId.substring(0, 4) : ""}`,
+          department: r.departmentName || r.medicalDepartmentName || r.wardName || "الجراحة العامة",
+          type: mapRoomTypeToArabic(r.roomType),
+          rawType: r.roomType || "Standard",
+          occupied,
+          available,
+          total,
+          occupancyRate: rate,
+          status
+        };
+      });
+      setRooms(mappedRooms);
+
+    } catch (err) {
+      console.error("Failed to load rooms and beds:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoomsAndBeds();
+  }, []);
 
   // Filter Rooms
   const filteredRooms = rooms.filter(room => {
@@ -71,49 +151,25 @@ function HospitalRoomsBeds({ showToast }) {
     return matchesSearch && matchesDept && matchesStatus;
   });
 
-  // Bed details list derived from rooms for "View Beds" tab
-  const derivedBeds = [];
-  rooms.forEach(room => {
-    for (let i = 1; i <= room.occupied + room.available; i++) {
-      const bedLetter = String.fromCharCode(64 + i); // A, B, C...
-      const isOccupied = i <= room.occupied;
-      derivedBeds.push({
-        id: `${room.roomNumber}-${bedLetter}`,
-        roomNumber: room.roomNumber,
-        department: room.department,
-        bedNumber: `${room.roomNumber}-${bedLetter}`,
-        status: isOccupied ? "occupied" : "available",
-        patient: isOccupied ? "مريض مقيم" : "لا يوجد"
-      });
-    }
-  });
-
-  const filteredBeds = derivedBeds.filter(bed => {
+  // Filter Beds
+  const filteredBeds = beds.filter(bed => {
     const matchesSearch = bed.bedNumber.includes(searchTerm) || bed.roomNumber.includes(searchTerm);
     const matchesDept = selectedDept === "كل الأقسام" || bed.department === selectedDept;
     
     let matchesStatus = true;
     if (selectedStatus !== "كل الحالات") {
-      if (selectedStatus === "ممتلئة") matchesStatus = bed.status === "occupied";
-      else if (selectedStatus === "متاحة") matchesStatus = bed.status === "available";
+      if (selectedStatus === "ممتلئة") matchesStatus = bed.status === "Occupied";
+      else if (selectedStatus === "متاحة") matchesStatus = bed.status === "Available";
     }
     
     return matchesSearch && matchesDept && matchesStatus;
   });
 
-  // Room status Arabic label helper
-  const getRoomStatusBadge = (status) => {
-    switch (status) {
-      case "full":
-        return <span className="danger">ممتلئة</span>;
-      case "partial":
-        return <span className="status" style={{ background: "var(--accent-amber-light)", color: "#92400e" }}>جزئي</span>;
-      case "available":
-        return <span className="status">متاحة</span>;
-      default:
-        return <span className="status">متاحة</span>;
-    }
-  };
+  // KPI Calculations
+  const totalBedsCount = beds.length;
+  const occupiedBedsCount = beds.filter(b => b.status === "Occupied").length;
+  const availableBedsCount = beds.filter(b => b.status === "Available").length;
+  const overallOccupancyRate = totalBedsCount > 0 ? Math.round((occupiedBedsCount / totalBedsCount) * 100) : 0;
 
   // Occupancy rate progress bar color
   const getProgressBarColor = (rate) => {
@@ -122,77 +178,65 @@ function HospitalRoomsBeds({ showToast }) {
     return "var(--accent-emerald)";
   };
 
-  // Row Action Handlers
-  const handleMaintenanceToggle = (id) => {
-    let roomNum = "";
-    let isMaintenanceNow = false;
-    setRooms(prev => prev.map(r => {
-      if (r.id === id) {
-        const isMaintenance = r.status === "maintenance";
-        roomNum = r.roomNumber;
-        isMaintenanceNow = !isMaintenance;
-        return { 
-          ...r, 
-          status: isMaintenance ? "available" : "maintenance",
-          occupancyRate: isMaintenance ? 0 : r.occupancyRate
-        };
-      }
-      return r;
-    }));
-    setActiveDropdownId(null);
-    showToast?.(`تم تحديث الحالة الفنية للغرفة ${roomNum} إلى: ${isMaintenanceNow ? "صيانة 🛠️" : "متاحة للخدمة 🟢"}.`, "success");
-  };
-
-  const handleDeleteRoom = (id) => {
-    const room = rooms.find(r => r.id === id);
-    setConfirmModal({
-      isOpen: true,
-      title: "تأكيد حذف الغرفة",
-      message: `هل أنت متأكد من حذف الغرفة (${room?.roomNumber || ''}) وجميع الأسرة التابعة لها نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`,
-      onConfirm: () => {
-        setRooms(prev => prev.filter(r => r.id !== id));
-        showToast?.(`تم حذف الغرفة ${room?.roomNumber || ''} بنجاح.`, "success");
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-      }
-    });
+  // Add Bed to Room (POST /api/v1/facilities/beds)
+  const handleAddBed = async (roomId) => {
+    try {
+      await api.post("/api/v1/facilities/beds", { roomId });
+      fetchRoomsAndBeds();
+      showToast?.("تم إضافة سرير جديد للغرفة بنجاح.", "success");
+    } catch (err) {
+      console.error("Failed to add bed:", err);
+      showToast?.("فشل إضافة سرير للغرفة.", "danger");
+    }
     setActiveDropdownId(null);
   };
 
-  const handleActionToast = (actionName) => {
-    showToast?.(`سيتم فتح نافذة (${actionName}) للغرفة المحددة قريباً.`, "info");
-    setActiveDropdownId(null);
+  // Update Bed Status (PATCH /api/v1/beds/{id}/status)
+  const handleUpdateBedStatus = async (id, newStatus) => {
+    try {
+      await api.patch(`/api/v1/beds/${id}/status`, null, {
+        params: { status: newStatus }
+      });
+      fetchRoomsAndBeds();
+      showToast?.("تم تحديث حالة السرير بنجاح.", "success");
+    } catch (err) {
+      console.error("Failed to update bed status:", err);
+      showToast?.("فشل تحديث حالة السرير في الخادم.", "danger");
+    }
   };
 
-  // Add Room Submit
-  const handleAddRoomSubmit = (e) => {
+  // Add Room Submit (POST /api/v1/facilities/rooms)
+  const handleAddRoomSubmit = async (e) => {
     e.preventDefault();
-    if (!newRoom.roomNumber || !newRoom.department) {
+    if (!newRoom.departmentId || !newRoom.type) {
       showToast?.("يرجى ملء جميع الحقول المطلوبة.", "error");
       return;
     }
 
-    const newId = rooms.length > 0 ? Math.max(...rooms.map(r => r.id)) + 1 : 1;
-    const roomToAdd = {
-      id: newId,
-      roomNumber: newRoom.roomNumber,
-      department: newRoom.department,
-      type: newRoom.type,
-      occupied: 0,
-      available: Number(newRoom.bedsCount) || 2,
-      occupancyRate: 0,
-      status: "available"
-    };
+    try {
+      // Create a ward for this department to associate the room with
+      const deptName = dbDepts.find(d => d.id === newRoom.departmentId)?.name || "القسم";
+      const wardRes = await api.post("/api/v1/facilities/wards", {
+        medicalDepartmentId: newRoom.departmentId,
+        name: `جناح ${deptName}`
+      });
+      const wardId = wardRes.data?.data?.wardId;
+      if (!wardId) {
+        throw new Error("Could not create ward for department.");
+      }
 
-    setRooms(prev => [...prev, roomToAdd]);
-    setIsModalOpen(false);
-    showToast?.(`تم إضافة الغرفة ${roomToAdd.roomNumber} بنجاح.`, "success");
-    // Reset Form
-    setNewRoom({
-      roomNumber: "",
-      department: "",
-      type: "غرفة عادية",
-      bedsCount: 2
-    });
+      await api.post("/api/v1/facilities/rooms", {
+        wardId,
+        roomType: newRoom.type
+      });
+      fetchRoomsAndBeds();
+      setIsModalOpen(false);
+      showToast?.("تم إضافة الغرفة بنجاح.", "success");
+      setNewRoom({ departmentId: "", type: "Standard" });
+    } catch (err) {
+      console.error("Failed to create room:", err);
+      showToast?.("فشل إضافة الغرفة بالخادم الموحد.", "danger");
+    }
   };
 
   return (
@@ -221,7 +265,7 @@ function HospitalRoomsBeds({ showToast }) {
               style={{ paddingRight: "35px", cursor: "pointer", background: "white" }}
             >
               <option value="كل الأقسام">كل الأقسام</option>
-              {initialDepartmentsData.map(d => (
+              {dbDepts.map(d => (
                 <option key={d.id} value={d.name}>{d.name}</option>
               ))}
             </select>
@@ -296,7 +340,7 @@ function HospitalRoomsBeds({ showToast }) {
               fontSize: "12.5px",
               fontFamily: "Outfit" 
             }}>
-              69%
+              {overallOccupancyRate}%
             </div>
             <div style={{ 
               position: "absolute", 
@@ -317,7 +361,7 @@ function HospitalRoomsBeds({ showToast }) {
         <div className="card">
           <h3>الأسرة المتاحة</h3>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>126</p>
+            <p>{availableBedsCount}</p>
             <span style={{ 
               fontSize: "24px", 
               background: "rgba(16, 185, 129, 0.08)", 
@@ -334,7 +378,7 @@ function HospitalRoomsBeds({ showToast }) {
         <div className="card">
           <h3>الأسرة المشغولة</h3>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>286</p>
+            <p>{occupiedBedsCount}</p>
             <span style={{ 
               fontSize: "24px", 
               background: "rgba(239, 68, 68, 0.08)", 
@@ -351,7 +395,7 @@ function HospitalRoomsBeds({ showToast }) {
         <div className="card">
           <h3>إجمالي الغرف</h3>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>128</p>
+            <p>{rooms.length}</p>
             <span style={{ 
               fontSize: "24px", 
               background: "var(--primary-glow)", 
@@ -383,7 +427,17 @@ function HospitalRoomsBeds({ showToast }) {
       </div>
 
       {/* Main Grid View */}
-      {viewMode === "rooms" ? (
+      {loading ? (
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
+          <FaSpinner className="spinner" style={{ fontSize: "28px", color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+          <p style={{ marginTop: "12px", fontWeight: "bold" }}>جاري تحميل البيانات...</p>
+        </div>
+      ) : error ? (
+        <div style={{ padding: "30px", textAlign: "center", background: "#fef2f2", border: "1.5px solid #fee2e2", borderRadius: "12px", color: "#991b1b", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", margin: "20px 0" }}>
+          <span style={{ fontWeight: "700" }}>فشل تحميل الغرف والأسرة من الخادم الموحد</span>
+          <button className="btn" onClick={fetchRoomsAndBeds} style={{ background: "var(--primary)", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>إعادة المحاولة</button>
+        </div>
+      ) : viewMode === "rooms" ? (
         <div className="box" style={{ overflow: "visible" }}>
           <h2>سجل الغرف الاستيعابية</h2>
           <div className="table-container">
@@ -391,8 +445,8 @@ function HospitalRoomsBeds({ showToast }) {
               <thead>
                 <tr>
                   <th style={{ textAlign: "center", width: "60px" }}>#</th>
-                  <th style={{ textAlign: "center" }}>رقم الغرفة</th>
-                  <th style={{ textAlign: "right" }}>القسم</th>
+                  <th style={{ textAlign: "center" }}>رمز/معرف الغرفة</th>
+                  <th style={{ textAlign: "right" }}>القسم / الجناح</th>
                   <th style={{ textAlign: "right" }}>نوع الغرفة</th>
                   <th style={{ textAlign: "center" }}>الأسرة المشغولة</th>
                   <th style={{ textAlign: "center" }}>الأسرة المتاحة</th>
@@ -429,10 +483,12 @@ function HospitalRoomsBeds({ showToast }) {
                       </div>
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      {room.status === "maintenance" ? (
-                        <span className="danger" style={{ background: "rgba(245,158,11,0.1)", color: "var(--accent-amber)" }}>تحت الصيانة</span>
+                      {room.status === "full" ? (
+                        <span className="danger">ممتلئة</span>
+                      ) : room.status === "partial" ? (
+                        <span className="status" style={{ background: "var(--accent-amber-light)", color: "#92400e" }}>جزئي</span>
                       ) : (
-                        getRoomStatusBadge(room.status)
+                        <span className="status">متاحة</span>
                       )}
                     </td>
                     <td style={{ textAlign: "center", position: "relative" }}>
@@ -469,34 +525,9 @@ function HospitalRoomsBeds({ showToast }) {
                             flexDirection: "column",
                             gap: "3px"
                           }}>
-                            <button onClick={() => handleActionToast("تفاصيل الغرفة")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                              <FaRegEye style={{ color: "var(--secondary)" }} /> عرض تفاصيل الغرفة
-                            </button>
-                            <button onClick={() => { setViewMode("beds"); setSearchTerm(room.roomNumber); setActiveDropdownId(null); }} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                              <FaBed style={{ color: "var(--accent-purple)" }} /> عرض الأسرة
-                            </button>
-                            <button onClick={() => handleActionToast("إضافة سرير")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
+                            <button onClick={() => handleAddBed(room.id)} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
                               <FaPlus style={{ color: "var(--accent-emerald)" }} /> إضافة سرير للغرفة
                             </button>
-
-                            <div style={{ borderTop: "1px solid var(--bg-main)", paddingTop: "4px", marginTop: "4px" }}>
-                              <button onClick={() => handleActionToast("نقل مريض")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                                <FaRightLeft style={{ color: "var(--accent-amber)" }} /> نقل مريض للغرفة
-                              </button>
-                              <button onClick={() => handleMaintenanceToggle(room.id)} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                                <FaWrench style={{ color: "var(--accent-amber)" }} /> 
-                                {room.status === "maintenance" ? "إلغاء الصيانة للغرفة" : "وضع الغرفة تحت الصيانة"}
-                              </button>
-                              <button onClick={() => handleActionToast("المرضى الحاليين")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                                <FaUsers style={{ color: "var(--primary)" }} /> عرض المرضى الموجودين
-                              </button>
-                            </div>
-
-                            <div style={{ borderTop: "1px solid var(--bg-main)", paddingTop: "4px", marginTop: "4px" }}>
-                              <button onClick={() => handleDeleteRoom(room.id)} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", color: "var(--accent-red)", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                                <FaTrashCan style={{ color: "var(--accent-red)" }} /> حذف الغرفة
-                              </button>
-                            </div>
                           </div>
                         </>
                       )}
@@ -523,11 +554,11 @@ function HospitalRoomsBeds({ showToast }) {
                 <tr>
                   <th style={{ textAlign: "center", width: "60px" }}>#</th>
                   <th style={{ textAlign: "center" }}>رمز السرير</th>
-                  <th style={{ textAlign: "center" }}>رقم الغرفة</th>
+                  <th style={{ textAlign: "center" }}>معرف الغرفة</th>
                   <th style={{ textAlign: "right" }}>القسم</th>
                   <th style={{ textAlign: "center" }}>الحالة</th>
                   <th style={{ textAlign: "right" }}>الشاغل الحالي</th>
-                  <th style={{ textAlign: "center", width: "120px" }}>إجراء</th>
+                  <th style={{ textAlign: "center", width: "160px" }}>تغيير الحالة</th>
                 </tr>
               </thead>
               <tbody>
@@ -542,23 +573,35 @@ function HospitalRoomsBeds({ showToast }) {
                     <td style={{ textAlign: "center", fontWeight: "bold" }}>{bed.roomNumber}</td>
                     <td style={{ textAlign: "right", fontWeight: "600" }}>{bed.department}</td>
                     <td style={{ textAlign: "center" }}>
-                      {bed.status === "occupied" ? (
+                      {bed.status === "Occupied" ? (
                         <span className="danger" style={{ background: "rgba(239,68,68,0.08)", color: "var(--accent-red)" }}>مشغول</span>
                       ) : (
-                        <span className="status">متاح شاغر</span>
+                        <span className="status">{mapBedStatusToArabic(bed.status)}</span>
                       )}
                     </td>
-                    <td style={{ textAlign: "right", color: bed.status === "occupied" ? "var(--text-dark)" : "var(--text-muted)" }}>
+                    <td style={{ textAlign: "right", color: bed.status === "Occupied" ? "var(--text-dark)" : "var(--text-muted)" }}>
                       {bed.patient}
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <button 
-                        className="btn btn-secondary" 
-                        onClick={() => handleActionToast(`إدارة السرير ${bed.bedNumber}`)}
-                        style={{ padding: "6px 12px", fontSize: "12px" }}
+                      <select
+                        value={bed.status}
+                        onChange={(e) => handleUpdateBedStatus(bed.id, e.target.value)}
+                        style={{
+                          padding: "5px 10px",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          border: "1px solid var(--border-color)",
+                          background: "white",
+                          cursor: "pointer"
+                        }}
                       >
-                        إدارة السرير
-                      </button>
+                        <option value="Available">متاح شاغر</option>
+                        <option value="Occupied">مشغول</option>
+                        <option value="Reserved">محجوز</option>
+                        <option value="Cleaning">تنظيف</option>
+                        <option value="Maintenance">صيانة</option>
+                        <option value="OutOfService">خارج الخدمة</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
@@ -581,59 +624,38 @@ function HospitalRoomsBeds({ showToast }) {
           <div className="modal-content" style={{ width: "500px" }}>
             <span className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</span>
             <h2 style={{ color: "var(--primary)", marginTop: "0", borderBottom: "2px solid var(--bg-main)", paddingBottom: "15px", fontWeight: "700", fontSize: "18px" }}>
-              ➕ إضافة غرفة استيعابية جديدة
+              ➕ إضافة غرفة جديدة للقسم
             </h2>
             <form onSubmit={handleAddRoomSubmit} style={{ marginTop: "20px" }}>
-              <div style={{ marginBottom: "15px" }}>
-                <label>رقم الغرفة <span style={{ color: "var(--accent-red)" }}>*</span></label>
-                <input 
-                  type="text" 
-                  placeholder="مثال: 105، 206..." 
-                  required
-                  value={newRoom.roomNumber}
-                  onChange={(e) => setNewRoom({ ...newRoom, roomNumber: e.target.value })}
-                />
-              </div>
-
               <div style={{ marginBottom: "15px" }}>
                 <label>القسم الطبي <span style={{ color: "var(--accent-red)" }}>*</span></label>
                 <select 
                   required
-                  value={newRoom.department}
-                  onChange={(e) => setNewRoom({ ...newRoom, department: e.target.value })}
+                  value={newRoom.departmentId}
+                  onChange={(e) => setNewRoom({ ...newRoom, departmentId: e.target.value })}
                   style={{ width: "100%" }}
                 >
                   <option value="" disabled hidden>اختر القسم</option>
-                  {initialDepartmentsData.map(d => (
-                    <option key={d.id} value={d.name}>{d.name}</option>
+                  {dbDepts.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "25px" }}>
-                <div>
-                  <label>نوع الغرفة</label>
-                  <select 
-                    value={newRoom.type}
-                    onChange={(e) => setNewRoom({ ...newRoom, type: e.target.value })}
-                    style={{ width: "100%" }}
-                  >
-                    <option value="غرفة عادية">غرفة عادية</option>
-                    <option value="غرفة مزدوجة">غرفة مزدوجة</option>
-                    <option value="غرفة خاصة">غرفة خاصة</option>
-                    <option value="العناية المركزة">العناية المركزة</option>
-                  </select>
-                </div>
-                <div>
-                  <label>عدد الأسرة الكلي بالحد الأقصى</label>
-                  <input 
-                    type="number" 
-                    min="1"
-                    placeholder="2"
-                    value={newRoom.bedsCount}
-                    onChange={(e) => setNewRoom({ ...newRoom, bedsCount: e.target.value })}
-                  />
-                </div>
+              <div style={{ marginBottom: "25px" }}>
+                <label>نوع الغرفة</label>
+                <select 
+                  value={newRoom.type}
+                  onChange={(e) => setNewRoom({ ...newRoom, type: e.target.value })}
+                  style={{ width: "100%" }}
+                >
+                  <option value="Standard">غرفة عادية</option>
+                  <option value="Private">غرفة خاصة</option>
+                  <option value="ICU">العناية المركزة</option>
+                  <option value="Operation">غرفة عمليات</option>
+                  <option value="Emergency">طوارئ</option>
+                  <option value="Isolation">عزل طبي</option>
+                </select>
               </div>
 
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
@@ -644,13 +666,6 @@ function HospitalRoomsBeds({ showToast }) {
           </div>
         </div>
       )}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-      />
     </div>
   );
 }

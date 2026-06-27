@@ -1,15 +1,18 @@
 import React from "react";
 import { FaRegBell } from "react-icons/fa6";
 
-function HeaderUserBadge({ name, avatar, badgeCount = 3 }) {
+function HeaderUserBadge({ name, avatar, badgeCount, hasUnread }) {
   const displayInitial = name ? name.trim().charAt(0) : "";
+
+  // Backward compatibility: if both badgeCount and hasUnread are undefined, default count to 3
+  const finalBadgeCount = (badgeCount === undefined && hasUnread === undefined) ? 3 : badgeCount;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
       {/* Notification Bell */}
       <div className="relative cursor-pointer" style={{ fontSize: "20px", color: "var(--text-muted)", position: "relative", display: "flex", alignItems: "center" }}>
         <FaRegBell />
-        {badgeCount > 0 && (
+        {finalBadgeCount > 0 ? (
           <span style={{ 
             position: "absolute", 
             top: "-5px", 
@@ -26,9 +29,20 @@ function HeaderUserBadge({ name, avatar, badgeCount = 3 }) {
             fontWeight: "bold",
             lineHeight: "1"
           }}>
-            {badgeCount}
+            {finalBadgeCount}
           </span>
-        )}
+        ) : hasUnread ? (
+          <span style={{ 
+            position: "absolute", 
+            top: "0px", 
+            right: "0px", 
+            background: "var(--accent-red)", 
+            borderRadius: "50%", 
+            width: "8px", 
+            height: "8px",
+            display: "inline-block"
+          }} />
+        ) : null}
       </div>
 
       {/* User Info & Avatar/Initial */}

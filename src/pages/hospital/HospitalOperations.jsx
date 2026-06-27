@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import HeaderUserBadge from "../../components/common/HeaderUserBadge";
+import ConfirmModal from "../../components/common/ConfirmModal";
+import api from "../../utils/api";
 
 import { 
   FaCalendarDay, 
@@ -10,144 +12,195 @@ import {
   FaUser, 
   FaUserDoctor, 
   FaLayerGroup, 
-  FaFilter, 
-  FaRegBell,
-  FaDoorClosed,
-  FaCalendar,
-  FaFloppyDisk,
-  FaChevronDown,
-  FaTrashCan,
-  FaCircleXmark
+  FaFilter,
+  FaChevronDown
 } from "react-icons/fa6";
-import { initialOperationsData } from "../../data/hospital/operations";
-import { initialDepartmentsData } from "../../data/hospital/departments";
-import { initialDoctorsData } from "../../data/hospital/doctors";
-import ConfirmModal from "../../components/common/ConfirmModal";
+
+function mapFollowUpTypeToArabic(type) {
+  switch (type) {
+    case "DoctorVisit": return "زيارة طبيب";
+    case "NurseCheck": return "فحص ممرض";
+    case "MedicationReminder": return "تذكير بالدواء";
+    case "LabTest": return "تحليل مخبري";
+    case "Radiology": return "أشعة تشخيصية";
+    case "SurgeryPreparation": return "عملية جراحية";
+    case "PharmacyConsultation": return "استشارة صيدلانية";
+    default: return type || "أخرى";
+  }
+}
+
+function mapStatusToArabic(status) {
+  switch (status) {
+    case "Pending": return "مجدولة";
+    case "Done": return "مكتملة";
+    case "Missed": return "فائتة";
+    case "Cancelled": return "ملغاة";
+    default: return status || "مجدولة";
+  }
+}
 
 function HospitalOperations({ showToast }) {
-  const [operations, setOperations] = useState(() => {
-    const saved = localStorage.getItem("hospital_operations");
-    return saved ? JSON.parse(saved) : initialOperationsData;
-  });
+  const [operations, setOperations] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem("hospital_operations", JSON.stringify(operations));
-  }, [operations]);
   const [searchPatient, setSearchPatient] = useState("");
   const [searchSurgeon, setSearchSurgeon] = useState("");
-  const [selectedDept, setSelectedDept] = useState("كل الأقسام");
   const [selectedStatus, setSelectedStatus] = useState("كل الحالات");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
-  const [confirmModal, setConfirmModal] = useState({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: null
-  });
+
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // New Operation Form State
   const [newOp, setNewOp] = useState({
-    patientName: "",
-    surgeon: "",
-    department: "",
-    type: "",
-    room: "",
+    patientId: "",
+    doctorId: "",
+    type: "SurgeryPreparation",
+    contactMethod: "Hospital visit",
     date: new Date().toISOString().split("T")[0],
     time: "",
     notes: ""
   });
 
-  // Filter Operations
-  const filteredOps = operations.filter(op => {
-    const matchesPatient = op.patientName.includes(searchPatient);
-    const matchesSurgeon = op.surgeon.includes(searchSurgeon);
-    const matchesDept = selectedDept === "كل الأقسام" || op.department === selectedDept;
-    
-    let matchesStatus = true;
-    if (selectedStatus !== "كل الحالات") {
-      if (selectedStatus === "مجدولة") matchesStatus = op.status === "scheduled";
-      else if (selectedStatus === "جارية الآن") matchesStatus = op.status === "active";
-      else if (selectedStatus === "مكتملة") matchesStatus = op.status === "completed";
-      else if (selectedStatus === "ملغاة") matchesStatus = op.status === "cancelled";
-    }
+  const facilityId = sessionStorage.getItem("facilityId") || "f203157f-0975-4bcf-b8c7-48c2fba672bf";
 
-    return matchesPatient && matchesSurgeon && matchesDept && matchesStatus;
+  // Fetch operations
+  const fetchOperations = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const response = await api.get(`/api/v1/facilities/${facilityId}/operations`, {
+        params: {
+          Search: searchPatient || undefined,
+          Page: page,
+          PageSize: pageSize,
+          status: selectedStatus !== "كل الحالات" ? selectedStatus : undefined
+        }
+      });
+      if (response.data && response.data.success) {
+        const data = response.data.data;
+        const items = data.items || [];
+        const mapped = items.map(op => {
+          const scheduledAt = op.scheduledAt || "";
+          const datePart = scheduledAt.split("T")[0] || "-";
+          const timePart = scheduledAt.split("T")[1]?.substring(0, 5) || "-";
+          return {
+            id: op.patientFollowUpId || op.id || "",
+            opNumber: `OP-${(op.patientFollowUpId || op.id || "").substring(0, 5).toUpperCase()}`,
+            patientName: op.patientDisplayName || op.patientName || "مريض غير مسمى",
+            surgeon: op.doctorDisplayName || op.doctorName || "طبيب غير مسمى",
+            department: op.departmentName || "قسم العمليات",
+            room: op.followUpContactMethod || "غرفة العمليات",
+            date: datePart,
+            time: timePart,
+            status: op.status || "Pending",
+            initialLetter: (op.patientDisplayName || op.patientName || "م").charAt(0)
+          };
+        });
+        setOperations(mapped);
+        setTotalPages(data.totalPages || 1);
+        setTotalCount(data.totalCount || items.length);
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      console.error("Failed to load operations:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load modal dependencies
+  const loadModalData = async () => {
+    try {
+      const docRes = await api.get("/api/v1/users", { params: { role: "Doctor", Page: 1, PageSize: 100 } });
+      setDoctors(docRes.data?.data?.items || []);
+
+      const patRes = await api.get("/api/v1/users", { params: { role: "Patient", Page: 1, PageSize: 100 } });
+      setPatients(patRes.data?.data?.items || []);
+    } catch (err) {
+      console.error("Failed to load operations modal data:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchOperations();
+  }, [searchPatient, selectedStatus, page]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      loadModalData();
+    }
+  }, [isModalOpen]);
+
+  // Filter local copy if needed (e.g. search by surgeon)
+  const filteredOps = operations.filter(op => {
+    const matchesSurgeon = op.surgeon.includes(searchSurgeon);
+    return matchesSurgeon;
   });
 
   // Stats
-  const totalToday = operations.length;
-  const activeCount = operations.filter(o => o.status === "active").length;
-  const scheduledCount = operations.filter(o => o.status === "scheduled").length;
-  const completedCount = operations.filter(o => o.status === "completed").length;
+  const totalToday = totalCount;
+  const activeCount = operations.filter(o => o.status === "Pending").length; // Pending / Scheduled
+  const completedCount = operations.filter(o => o.status === "Done").length; // Done
 
-  // Row Action Handlers
-  const handleUpdateStatus = (id, newStatus) => {
-    let patientName = "";
-    setOperations(prev => prev.map(o => {
-      if (o.id === id) {
-        patientName = o.patientName;
-        return { ...o, status: newStatus };
-      }
-      return o;
-    }));
-    setActiveDropdownId(null);
-    const statusAr = newStatus === 'scheduled' ? 'مجدولة' : newStatus === 'ongoing' ? 'جارية الآن' : 'مكتملة';
-    showToast?.(`تم تحديث حالة العملية للمريض ${patientName} بنجاح إلى: ${statusAr}.`, "success");
-  };
-
-  const handleDeleteOp = (id) => {
-    const op = operations.find(o => o.id === id);
-    setConfirmModal({
-      isOpen: true,
-      title: "تأكيد إلغاء وحذف العملية",
-      message: `هل أنت متأكد من إلغاء وحذف عملية المريض (${op?.patientName || ''}) من جدول اليوم نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`,
-      onConfirm: () => {
-        setOperations(prev => prev.filter(o => o.id !== id));
-        showToast?.(`تم إزالة عملية المريض ${op?.patientName || ''} بنجاح.`, "success");
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-      }
-    });
+  // Complete Operation Handler
+  const handleCompleteOperation = async (id) => {
+    try {
+      await api.patch(`/api/v1/operations/follow-ups/${id}/complete`);
+      fetchOperations();
+      showToast?.("تم وضع حالة المتابعة/العملية كمكتملة بنجاح.", "success");
+    } catch (err) {
+      console.error("Failed to complete operation:", err);
+      showToast?.("فشل تحديث حالة العملية بالخادم.", "danger");
+    }
     setActiveDropdownId(null);
   };
 
   // Add Operation Submit
-  const handleAddOpSubmit = (e) => {
+  const handleAddOpSubmit = async (e) => {
     e.preventDefault();
-    if (!newOp.patientName || !newOp.surgeon || !newOp.department || !newOp.type || !newOp.room || !newOp.time) {
+    if (!newOp.patientId || !newOp.doctorId || !newOp.time) {
       showToast?.("يرجى ملء جميع الحقول المطلوبة.", "error");
       return;
     }
 
-    const newId = operations.length > 0 ? Math.max(...operations.map(o => o.id)) + 1 : 1;
-    const opNumber = `OP-00${40 + newId}`;
-    const opToAdd = {
-      id: newId,
-      opNumber: opNumber,
-      patientName: newOp.patientName,
-      surgeon: newOp.surgeon,
-      department: newOp.department,
-      room: newOp.room,
-      date: newOp.date,
-      time: newOp.time,
-      status: "scheduled",
-      initialLetter: newOp.patientName.charAt(0)
-    };
-
-    setOperations(prev => [...prev, opToAdd]);
-    setIsModalOpen(false);
-    showToast?.(`تم إضافة عملية المريض ${opToAdd.patientName} بنجاح للجدول.`, "success");
-    // Reset Form
-    setNewOp({
-      patientName: "",
-      surgeon: "",
-      department: "",
-      type: "",
-      room: "",
-      date: new Date().toISOString().split("T")[0],
-      time: "",
-      notes: ""
-    });
+    try {
+      const scheduledAt = `${newOp.date}T${newOp.time}:00Z`;
+      await api.post("/api/v1/operations/follow-ups", {
+        patientId: newOp.patientId,
+        followUpDoctorId: newOp.doctorId,
+        assignedToUserId: newOp.doctorId,
+        followUpContactMethod: newOp.contactMethod,
+        type: newOp.type,
+        scheduledAt,
+        notes: newOp.notes
+      });
+      fetchOperations();
+      setIsModalOpen(false);
+      showToast?.("تم جدولة العملية بنجاح وحفظها بالخادم!", "success");
+      // Reset form
+      setNewOp({
+        patientId: "",
+        doctorId: "",
+        type: "SurgeryPreparation",
+        contactMethod: "Hospital visit",
+        date: new Date().toISOString().split("T")[0],
+        time: "",
+        notes: ""
+      });
+    } catch (err) {
+      console.error("Failed to create follow-up:", err);
+      showToast?.("فشل جدولة العملية بالخادم.", "danger");
+    }
   };
 
   return (
@@ -164,7 +217,7 @@ function HospitalOperations({ showToast }) {
       {/* KPI Stats Cards */}
       <div className="cards">
         <div className="card" style={{ borderBottom: "4px solid var(--primary)" }}>
-          <h3>إجمالي العمليات اليوم</h3>
+          <h3>إجمالي العمليات</h3>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <p>{totalToday}</p>
             <span style={{ 
@@ -183,7 +236,7 @@ function HospitalOperations({ showToast }) {
         <div className="card" style={{ borderBottom: "4px solid var(--secondary)" }}>
           <h3>العمليات المجدولة</h3>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>{scheduledCount}</p>
+            <p>{activeCount}</p>
             <span style={{ 
               fontSize: "24px", 
               background: "var(--primary-glow)", 
@@ -193,23 +246,6 @@ function HospitalOperations({ showToast }) {
               display: "inline-flex" 
             }}>
               <FaClock />
-            </span>
-          </div>
-        </div>
-
-        <div className="card" style={{ borderBottom: "4px solid var(--accent-amber)" }}>
-          <h3>العمليات الجارية</h3>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <p>{activeCount}</p>
-            <span style={{ 
-              fontSize: "24px", 
-              background: "rgba(245, 158, 11, 0.08)", 
-              color: "var(--accent-amber)", 
-              padding: "10px", 
-              borderRadius: "var(--radius-sm)", 
-              display: "inline-flex" 
-            }}>
-              <FaSpinner className={activeCount > 0 ? "fa-spin" : ""} />
             </span>
           </div>
         </div>
@@ -245,7 +281,7 @@ function HospitalOperations({ showToast }) {
               type="text" 
               placeholder="بحث باسم المريض..." 
               value={searchPatient}
-              onChange={(e) => setSearchPatient(e.target.value)}
+              onChange={(e) => { setSearchPatient(e.target.value); setPage(1); }}
               style={{ width: "100%", paddingRight: "35px" }}
             />
             <FaUser style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: "11px" }} />
@@ -262,31 +298,16 @@ function HospitalOperations({ showToast }) {
             <FaUserDoctor style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: "11px" }} />
           </div>
 
-          <div style={{ position: "relative", minWidth: "150px" }}>
-            <select 
-              value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
-              style={{ paddingRight: "35px", cursor: "pointer", background: "white" }}
-            >
-              <option value="كل الأقسام">كل الأقسام</option>
-              {initialDepartmentsData.map(d => (
-                <option key={d.id} value={d.name}>{d.name}</option>
-              ))}
-            </select>
-            <FaLayerGroup style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: "11px", pointerEvents: "none" }} />
-          </div>
-
           <div style={{ position: "relative", minWidth: "140px" }}>
             <select 
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
               style={{ paddingRight: "35px", cursor: "pointer", background: "white" }}
             >
               <option value="كل الحالات">كل الحالات</option>
-              <option value="مجدولة">مجدولة</option>
-              <option value="جارية الآن">جارية الآن</option>
-              <option value="مكتملة">مكتملة</option>
-              <option value="ملغاة">ملغاة</option>
+              <option value="Pending">مجدولة</option>
+              <option value="Done">مكتملة</option>
+              <option value="Cancelled">ملغاة</option>
             </select>
             <FaFilter style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: "11px", pointerEvents: "none" }} />
           </div>
@@ -296,152 +317,155 @@ function HospitalOperations({ showToast }) {
       {/* Operations Table */}
       <div className="box" style={{ overflow: "visible" }}>
         <h2>قائمة الحالات والعمليات الجراحية</h2>
-        <div className="table-container">
-          <table style={{ overflow: "visible" }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: "center", width: "100px" }}>رقم العملية</th>
-                <th style={{ textAlign: "right" }}>اسم المريض</th>
-                <th style={{ textAlign: "right" }}>الجراح</th>
-                <th style={{ textAlign: "right" }}>القسم</th>
-                <th style={{ textAlign: "center" }}>غرفة العمليات</th>
-                <th style={{ textAlign: "center" }}>التاريخ</th>
-                <th style={{ textAlign: "center" }}>الوقت</th>
-                <th style={{ textAlign: "center" }}>الحالة</th>
-                <th style={{ textAlign: "center", width: "110px" }}>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOps.map((op) => (
-                <tr key={op.id}>
-                  <td style={{ textAlign: "center", fontFamily: "Outfit", color: "var(--text-muted)" }}>{op.opNumber}</td>
-                  <td style={{ textAlign: "right", fontWeight: "700" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <div style={{ 
-                        width: "32px", 
-                        height: "32px", 
-                        borderRadius: "50%", 
-                        background: op.initialLetter === "ف" ? "pink" : op.initialLetter === "خ" ? "#d1fae5" : "var(--primary-light)", 
-                        color: op.initialLetter === "ف" ? "red" : op.initialLetter === "خ" ? "#065f46" : "var(--primary)", 
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px"
-                      }}>
-                        {op.initialLetter}
-                      </div>
-                      <span style={{ color: "var(--text-dark)" }}>{op.patientName}</span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: "right", color: "var(--secondary)", fontWeight: "600" }}>{op.surgeon}</td>
-                  <td style={{ textAlign: "right", color: "var(--text-dark)" }}>{op.department}</td>
-                  <td style={{ textAlign: "center" }}>
-                    <span className="status" style={{ background: "var(--primary-light)", color: "var(--primary)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                      <FaDoorClosed style={{ fontSize: "10px" }} /> {op.room}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: "center", fontFamily: "Outfit" }}>{op.date}</td>
-                  <td style={{ textAlign: "center", fontFamily: "Outfit" }}>{op.time}</td>
-                  <td style={{ textAlign: "center" }}>
-                    {op.status === "active" && (
-                      <span className="status" style={{ background: "var(--accent-amber-light)", color: "#92400e", display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold" }}>
-                        <span style={{ 
-                          width: "6px", 
-                          height: "6px", 
-                          background: "var(--accent-red)", 
-                          borderRadius: "50%", 
-                          animation: "pulseDot 1.6s infinite" 
-                        }}></span>
-                        جارية الآن
-                      </span>
-                    )}
-                    {op.status === "scheduled" && (
-                      <span className="status" style={{ background: "var(--primary-light)", color: "var(--secondary)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ width: "6px", height: "6px", background: "var(--secondary)", borderRadius: "50%" }}></span>
-                        مجدولة
-                      </span>
-                    )}
-                    {op.status === "completed" && (
-                      <span className="status" style={{ background: "rgba(16, 185, 129, 0.08)", color: "var(--accent-emerald)", display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "bold" }}>
-                        <span style={{ width: "6px", height: "6px", background: "var(--accent-emerald)", borderRadius: "50%" }}></span>
-                        مكتملة
-                      </span>
-                    )}
-                    {op.status === "cancelled" && (
-                      <span className="danger" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ width: "6px", height: "6px", background: "var(--accent-red)", borderRadius: "50%" }}></span>
-                        ملغاة
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ textAlign: "center", position: "relative" }}>
-                    <button 
-                      className="btn btn-secondary" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveDropdownId(activeDropdownId === op.id ? null : op.id);
-                      }}
-                      style={{ padding: "6px 14px", fontWeight: "bold" }}
-                    >
-                      إدارة <FaChevronDown style={{ fontSize: "8px", marginRight: "4px" }} />
-                    </button>
-                    
-                    {/* Action Dropdown Menu */}
-                    {activeDropdownId === op.id && (
-                      <>
-                        <div 
-                          style={{ position: "fixed", inset: 0, zIndex: 90 }} 
-                          onClick={() => setActiveDropdownId(null)}
-                        ></div>
-                        <div style={{
-                          position: "absolute",
-                          left: "0",
-                          top: "40px",
-                          width: "160px",
-                          background: "white",
-                          border: "1px solid var(--border-color)",
-                          borderRadius: "var(--radius-md)",
-                          boxShadow: "var(--shadow-lg)",
-                          zIndex: 100,
-                          padding: "5px",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "3px"
-                        }}>
-                          <button onClick={() => handleUpdateStatus(op.id, "completed")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaCircleCheck style={{ color: "var(--accent-emerald)" }} /> مكتملة
-                          </button>
-                          
-                          <button onClick={() => handleActionToast("إعادة جدولة")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaClock style={{ color: "var(--accent-amber)" }} /> إعادة جدولة
-                          </button>
-                          
-                          <button onClick={() => handleUpdateStatus(op.id, "cancelled")} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", color: "var(--accent-red)", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                            <FaCircleXmark style={{ color: "var(--accent-red)" }} /> إلغاء العملية
-                          </button>
-
-                          <div style={{ borderTop: "1px solid var(--bg-main)", paddingTop: "4px", marginTop: "4px" }}>
-                            <button onClick={() => handleDeleteOp(op.id)} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", color: "var(--accent-red)", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
-                              <FaTrashCan style={{ color: "var(--accent-red)" }} /> حذف من الجدول
-                            </button>
+        {loading ? (
+          <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
+            <FaSpinner className="spinner" style={{ fontSize: "28px", color: "var(--primary)", animation: "spin 1s linear infinite" }} />
+            <p style={{ marginTop: "12px", fontWeight: "bold" }}>جاري تحميل جدول العمليات...</p>
+          </div>
+        ) : error ? (
+          <div style={{ padding: "30px", textAlign: "center", background: "#fef2f2", border: "1.5px solid #fee2e2", borderRadius: "12px", color: "#991b1b", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", margin: "20px 0" }}>
+            <span style={{ fontWeight: "700" }}>فشل تحميل جدول العمليات من الخادم الموحد</span>
+            <button className="btn" onClick={fetchOperations} style={{ background: "var(--primary)", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>إعادة المحاولة</button>
+          </div>
+        ) : filteredOps.length === 0 ? (
+          <div style={{ padding: "40px", textAlign: "center", border: "1.5px dashed #cbd5e1", borderRadius: "12px", background: "#f8fafc" }}>
+            <span style={{ color: "#64748b", fontWeight: "600", display: "block" }}>لا توجد عمليات جراحية مجدولة.</span>
+          </div>
+        ) : (
+          <>
+            <div className="table-container">
+              <table style={{ overflow: "visible" }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "center", width: "100px" }}>رمز العملية</th>
+                    <th style={{ textAlign: "right" }}>اسم المريض</th>
+                    <th style={{ textAlign: "right" }}>الجراح</th>
+                    <th style={{ textAlign: "right" }}>القسم</th>
+                    <th style={{ textAlign: "center" }}>غرفة العمليات / المتابعة</th>
+                    <th style={{ textAlign: "center" }}>التاريخ</th>
+                    <th style={{ textAlign: "center" }}>الوقت</th>
+                    <th style={{ textAlign: "center" }}>الحالة</th>
+                    <th style={{ textAlign: "center", width: "110px" }}>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOps.map((op) => (
+                    <tr key={op.id}>
+                      <td style={{ textAlign: "center", fontFamily: "Outfit", color: "var(--text-muted)" }}>{op.opNumber}</td>
+                      <td style={{ textAlign: "right", fontWeight: "700" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ 
+                            width: "32px", 
+                            height: "32px", 
+                            borderRadius: "50%", 
+                            background: "var(--primary-light)", 
+                            color: "var(--primary)", 
+                            fontWeight: "bold",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "12px"
+                          }}>
+                            {op.initialLetter}
                           </div>
+                          <span style={{ color: "var(--text-dark)" }}>{op.patientName}</span>
                         </div>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {filteredOps.length === 0 && (
-                <tr>
-                  <td colSpan="9" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)" }}>
-                    ⚠️ لا توجد عمليات مطابقة لخيارات البحث.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td style={{ textAlign: "right", color: "var(--secondary)", fontWeight: "600" }}>{op.surgeon}</td>
+                      <td style={{ textAlign: "right", color: "var(--text-dark)" }}>{op.department}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <span className="status" style={{ background: "var(--primary-light)", color: "var(--primary)" }}>
+                          {op.room}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "center", fontFamily: "Outfit" }}>{op.date}</td>
+                      <td style={{ textAlign: "center", fontFamily: "Outfit" }}>{op.time}</td>
+                      <td style={{ textAlign: "center" }}>
+                        {op.status === "Pending" ? (
+                          <span className="status" style={{ background: "var(--primary-light)", color: "var(--secondary)" }}>مجدولة</span>
+                        ) : op.status === "Done" ? (
+                          <span className="status" style={{ background: "rgba(16, 185, 129, 0.08)", color: "var(--accent-emerald)", fontWeight: "bold" }}>مكتملة</span>
+                        ) : (
+                          <span className="danger">{mapStatusToArabic(op.status)}</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: "center", position: "relative" }}>
+                        {op.status === "Pending" && (
+                          <>
+                            <button 
+                              className="btn btn-secondary" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(activeDropdownId === op.id ? null : op.id);
+                              }}
+                              style={{ padding: "6px 14px", fontWeight: "bold" }}
+                            >
+                              إدارة <FaChevronDown style={{ fontSize: "8px", marginRight: "4px" }} />
+                            </button>
+                            
+                            {/* Action Dropdown Menu */}
+                            {activeDropdownId === op.id && (
+                              <>
+                                <div 
+                                  style={{ position: "fixed", inset: 0, zIndex: 90 }} 
+                                  onClick={() => setActiveDropdownId(null)}
+                                ></div>
+                                <div style={{
+                                  position: "absolute",
+                                  left: "0",
+                                  top: "40px",
+                                  width: "160px",
+                                  background: "white",
+                                  border: "1px solid var(--border-color)",
+                                  borderRadius: "var(--radius-md)",
+                                  boxShadow: "var(--shadow-lg)",
+                                  zIndex: 100,
+                                  padding: "5px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "3px"
+                                }}>
+                                  <button onClick={() => handleCompleteOperation(op.id)} style={{ width: "100%", textAlign: "right", padding: "6px 12px", fontSize: "11.5px", border: "none", background: "none", cursor: "pointer", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", gap: "6px" }} className="btn-secondary">
+                                    <FaCircleCheck style={{ color: "var(--accent-emerald)" }} /> مكتملة
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )}
+                        {op.status !== "Pending" && <span>-</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination controls */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", fontSize: "13px", color: "var(--text-muted)", flexWrap: "wrap", gap: "10px" }}>
+              <div>عرض {operations.length} من {totalCount} عملية</div>
+              <div style={{ display: "flex", gap: "5px" }}>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: "6px 12px", fontSize: "12px" }} 
+                  disabled={page <= 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  السابق
+                </button>
+                <button className="btn" style={{ padding: "6px 12px", fontSize: "12px", minWidth: "30px" }}>{page}</button>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: "6px 12px", fontSize: "12px" }} 
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                >
+                  التالي
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Add Operation Modal */}
@@ -454,14 +478,18 @@ function HospitalOperations({ showToast }) {
             </h2>
             <form onSubmit={handleAddOpSubmit} style={{ marginTop: "20px" }}>
               <div style={{ marginBottom: "15px" }}>
-                <label>اسم المريض الكامل <span style={{ color: "var(--accent-red)" }}>*</span></label>
-                <input 
-                  type="text" 
-                  placeholder="مثال: محمد عبدالله علي" 
+                <label>اسم المريض <span style={{ color: "var(--accent-red)" }}>*</span></label>
+                <select 
                   required
-                  value={newOp.patientName}
-                  onChange={(e) => setNewOp({ ...newOp, patientName: e.target.value })}
-                />
+                  value={newOp.patientId}
+                  onChange={(e) => setNewOp({ ...newOp, patientId: e.target.value })}
+                  style={{ width: "100%" }}
+                >
+                  <option value="" disabled hidden>اختر المريض</option>
+                  {patients.map(p => (
+                    <option key={p.userId} value={p.userId}>{p.displayName} ({p.email || p.username})</option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
@@ -469,69 +497,41 @@ function HospitalOperations({ showToast }) {
                   <label>الجراح المعالج <span style={{ color: "var(--accent-red)" }}>*</span></label>
                   <select 
                     required
-                    value={newOp.surgeon}
-                    onChange={(e) => setNewOp({ ...newOp, surgeon: e.target.value })}
+                    value={newOp.doctorId}
+                    onChange={(e) => setNewOp({ ...newOp, doctorId: e.target.value })}
                     style={{ width: "100%" }}
                   >
                     <option value="" disabled hidden>اختر الطبيب الجراح</option>
-                    {initialDoctorsData.map(doc => (
-                      <option key={doc.id} value={doc.name}>{doc.name}</option>
+                    {doctors.map(d => (
+                      <option key={d.userId} value={d.userId}>{d.displayName}</option>
                     ))}
                   </select>
                 </div>
                 
                 <div>
-                  <label>القسم الطبي الموجه له <span style={{ color: "var(--accent-red)" }}>*</span></label>
+                  <label>نوع المتابعة / الفحص</label>
                   <select 
-                    required
-                    value={newOp.department}
-                    onChange={(e) => setNewOp({ ...newOp, department: e.target.value })}
+                    value={newOp.type}
+                    onChange={(e) => setNewOp({ ...newOp, type: e.target.value })}
                     style={{ width: "100%" }}
                   >
-                    <option value="" disabled hidden>اختر القسم</option>
-                    {initialDepartmentsData.map(d => (
-                      <option key={d.id} value={d.name}>{d.name}</option>
-                    ))}
+                    <option value="SurgeryPreparation">عملية جراحية</option>
+                    <option value="DoctorVisit">زيارة طبيب</option>
+                    <option value="NurseCheck">فحص ممرض</option>
+                    <option value="LabTest">تحليل مخبري</option>
+                    <option value="Radiology">أشعة تشخيصية</option>
                   </select>
                 </div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "15px", marginBottom: "15px" }}>
                 <div>
-                  <label>نوع العملية الجراحية <span style={{ color: "var(--accent-red)" }}>*</span></label>
+                  <label>موقع المتابعة / الغرفة</label>
                   <input 
                     type="text" 
-                    placeholder="مثال: استئصال الزائدة الدودية" 
-                    required
-                    value={newOp.type}
-                    onChange={(e) => setNewOp({ ...newOp, type: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label>غرفة العمليات <span style={{ color: "var(--accent-red)" }}>*</span></label>
-                  <select 
-                    required
-                    value={newOp.room}
-                    onChange={(e) => setNewOp({ ...newOp, room: e.target.value })}
-                    style={{ width: "100%" }}
-                  >
-                    <option value="" disabled hidden>اختر الغرفة</option>
-                    <option value="غرفة 1">غرفة 1</option>
-                    <option value="غرفة 2">غرفة 2</option>
-                    <option value="غرفة 3">غرفة 3</option>
-                    <option value="غرفة 4">غرفة 4</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-                <div>
-                  <label>التاريخ <span style={{ color: "var(--accent-red)" }}>*</span></label>
-                  <input 
-                    type="date" 
-                    required
-                    value={newOp.date}
-                    onChange={(e) => setNewOp({ ...newOp, date: e.target.value })}
+                    placeholder="مثال: غرفة العمليات الكبرى، عيادة 1..." 
+                    value={newOp.contactMethod}
+                    onChange={(e) => setNewOp({ ...newOp, contactMethod: e.target.value })}
                   />
                 </div>
                 <div>
@@ -545,11 +545,21 @@ function HospitalOperations({ showToast }) {
                 </div>
               </div>
 
+              <div style={{ marginBottom: "15px" }}>
+                <label>التاريخ <span style={{ color: "var(--accent-red)" }}>*</span></label>
+                <input 
+                  type="date" 
+                  required
+                  value={newOp.date}
+                  onChange={(e) => setNewOp({ ...newOp, date: e.target.value })}
+                />
+              </div>
+
               <div style={{ marginBottom: "25px" }}>
                 <label>ملاحظات إضافية</label>
                 <textarea 
                   rows="3" 
-                  placeholder="أي توصيات أو تفاصيل حول العملية..."
+                  placeholder="توصيات أو تفاصيل إضافية..."
                   value={newOp.notes}
                   onChange={(e) => setNewOp({ ...newOp, notes: e.target.value })}
                   style={{ width: "100%", fontFamily: "inherit" }}
@@ -557,22 +567,13 @@ function HospitalOperations({ showToast }) {
               </div>
 
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                <button type="submit" className="btn" style={{ background: "var(--primary)" }}>
-                  <FaFloppyDisk style={{ marginLeft: "5px" }} /> حفظ العملية
-                </button>
+                <button type="submit" className="btn">حفظ الجدولة</button>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>إلغاء</button>
               </div>
             </form>
           </div>
         </div>
       )}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-      />
     </div>
   );
 }
